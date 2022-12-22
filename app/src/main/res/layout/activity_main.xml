@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical"
+  android:paddingHorizontal="16dp"
+  android:gravity="center_horizontal"
+  android:paddingVertical="16dp"
+  app:layout_behavior="@string/appbar_scrolling_view_behavior"
+
+  tools:context=".MainActivity">
+
+  <TextView
+    android:id="@+id/serial_number"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textSize="24sp" />
+
+  <Button
+    android:id="@+id/buttonConnect"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16sp"
+    android:text="Connect" />
+
+  <TextView
+    android:id="@+id/connectingState"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16sp"
+    android:textSize="24sp"
+    tools:text="Connecting" />
+
+  <Button
+    android:id="@+id/buttonUnlock"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16sp"
+    android:text="Unlock"
+    android:visibility="gone" />
+</LinearLayout>

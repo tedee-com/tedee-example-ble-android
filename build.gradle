@@ -6,28 +6,8 @@ plugins {
 }
 
 ext {
-    daggerVersion = '2.44.2'
-    moxyVersion = "2.2.2"
-    lottieVersion = "5.2.0"
-    retrofit2Version = '2.9.0'
-    okhttpVersion = '4.10.0'
-    gsonVersion = '2.9.1'
-    msal_version = '4.0.1'
-    testVersion = "1.5.0"
-    espressoVersion = "3.5.0"
-    mockitoVersion = "4.7.0"
-    mockkVersion = "1.12.7"
-    annotationVersion = '1.5.0'
-    work_version = '2.8.0-beta02'
     rxJavaVersion = '2.2.21'
     rxAndroidVersion = '2.1.1'
     rxKotlinVersion = '2.4.0'
     timberVersion = '5.0.1'
-    appCenterSdkVersion = '4.4.5'
-    dfuVersion = '2.1.0'
-    // localization
-    poEditorMobileId = '429177'
-    poEditorAnalyticsId = '432389'
-    poEditorLinksId = '429191'
-    poEditorCitiesId = '441717'
 }

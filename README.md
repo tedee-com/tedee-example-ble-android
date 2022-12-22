@@ -62,50 +62,50 @@ On first launch app will ask you for permission to use Location and Bluetooth. B
 
 The app will also generate public key that is required to generate a lock certificate (see next steps). Look for `!!! Public key to register mobile:` in Logcat (bottom of Android Studio). Save the line below it for the next step. Pay attention to the Logcat, as you will see there also steps that are taken by the app to unlock the lock (connect, start an encrypted session, send unlock command, receive a response).
 ### Step 4 - register tedee example app
-1. log in to [tedee Portal](https://portal.tedee.com) with credentials from created tedee account 
-2. click on your initials in top right corner 
+1. Log in to [tedee Portal](https://portal.tedee.com) with credentials from created tedee account 
+2. Click on your initials in top right corner 
 
 ![img2](https://user-images.githubusercontent.com/81370389/209111859-9c022725-1593-4bfd-9d71-72b9e58d4397.png)
 
-3. click on Personal Access Keys and generate new access key with at least **Device certificates - Read** scope
+3. Click on Personal Access Keys and generate new access key with at least **Device certificates - Read** scope
 4. Go to [tedee API](https://api.tedee.com) and authorize yourself with created Personal Access Key
-5. click "Authorize" button
+5. Click "Authorize" button
 
 ![img9](https://user-images.githubusercontent.com/81370389/209112240-01764c21-16c8-4b42-86a6-5ee2374b81d7.png)
 
-6. proper format is `PersonalKey [YOUR PERSONAL ACCESS KEY]`
-7. confirm with `Authorize`
-8. go to `Mobile` section and use `POST /api/[api version]/my/mobile` route and click on `Try it out` button
+6. Proper format is `PersonalKey [YOUR PERSONAL ACCESS KEY]`
+7. Confirm with `Authorize`
+8. Go to `Mobile` section and use `POST /api/[api version]/my/mobile` route and click on `Try it out` button
 
 ![img13](https://user-images.githubusercontent.com/81370389/209114544-3764f0f9-0a03-41a7-bb67-426e1514f154.png)
 
-9. enter `name` (lock name from tedee app), `operatingSystem` set to `3` and `publicKey` the one that was copied in "First launch" step
-10. response will return `id` that is required in next step (as `MobileID`)
-11. go to `DeviceCertificate` section and use `/api/[api version]/my/devicecertificate/getformobile`
+9. Enter `name` (lock name from tedee app), `operatingSystem` set to `3` and `publicKey` the one that was copied in "First launch" step
+10. Response will return `id` that is required in next step (as `MobileID`)
+11. Go to `DeviceCertificate` section and use `/api/[api version]/my/devicecertificate/getformobile`
 
 ![img10](https://user-images.githubusercontent.com/81370389/209114588-68facc13-b162-48f7-baaa-6dd605b2228a.png)
 
-12. click on `Try it out`
-13. fill `MobileID` gathered from previous request response
-14. fill `DeviceId` gathered from tedee app (click: Lock > Settings > Information > Device ID)
+12. Click on `Try it out`
+13. Fill `MobileID` gathered from previous request response
+14. Fill `DeviceId` gathered from tedee app (click: Lock > Settings > Information > Device ID)
 15. Click `Execute`, store somewhere response result, you will need it in next step
 
 > :warning: Generated certificate has expiration date, which is attached to the response with certificate. After certificate expiration you will not be able to operate the lock and you need to get new one.
 
 ### Step 5 - add device certificate and serial number to project
 
-1. open MainActivity.kt in project navigator
-2. replace value of `LOCK_SERIAL` with your tedee lock serial number from tedee app (click: Lock > Settings > Information > Serial number)
-3. replace value of `CERTIFICATE` with `result.certificate` of API request 
-4. replace value of `DEVICE_PUBLIC_KEY` with `result.devicePublicKey` of API request 
+1. Open MainActivity.kt in project navigator
+2. Replace value of `LOCK_SERIAL` with your tedee lock serial number from tedee app (click: Lock > Settings > Information > Serial number)
+3. Replace value of `CERTIFICATE` with `result.certificate` of API request 
+4. Replace value of `DEVICE_PUBLIC_KEY` with `result.devicePublicKey` of API request 
 
 ### Step 6 - operate the lock
 
-1. make sure your lock was calibrated with tedee app and is in locked state 
-2. compile and run app again with `Run 'app'` button or use `Shift + F10`
-3. click "Connect" button
-4. after app connects to lock, click "Unlock" button
-5. app should unlock the lock, see Logcat. `MESSAGE:` tag indicates BT message sent by mobile, `LOCK:` tag indicates BT response from lock. 51 is command id for unlock, response contains additional parameter. If the parameter is 00, the lock sucessfully started the operation.
+1. Make sure your lock was calibrated with tedee app and is in locked state 
+2. Compile and run app again with `Run 'app'` button or use `Shift + F10`
+3. Click "Connect" button
+4. After app connects to lock, click "Unlock" button
+5. App should unlock the lock, see Logcat. `MESSAGE:` tag indicates BT message sent by mobile, `LOCK:` tag indicates BT response from lock. 51 is command id for unlock, response contains additional parameter. If the parameter is 00, the lock sucessfully started the operation.
 
 ![img15](https://user-images.githubusercontent.com/81370389/209112722-46611d90-0556-4725-8e9e-9b80aae2531c.png)
 

@@ -1,16 +1,16 @@
-# tedee lock communication example
+# Tedee Lock communication example
 
 ![lock](https://user-images.githubusercontent.com/81370389/209109383-c9163001-cc5b-418b-be65-87906a3cc11c.jpg)
 
 ## About
 
-This example project was created by the [tedee](https://tedee.com) team to show you how to operate the tedee lock using Bluetooth Low Energy communication protocol.
+This example project was created by the [Tedee](https://tedee.com) team to show you how to operate the Tedee Lock using Bluetooth Low Energy communication protocol.
 
 This project was created using Kotlin language and it runs on Android devices.
 
-The purpose of this project is to present how you can establish a Bluetooth connection with tedee Lock, start an encrypted session and operate it (currently only the `Unlock` command is implemented). 
+The purpose of this project is to present how you can establish a Bluetooth connection with Tedee Lock, start an encrypted session and operate it (currently only the `Unlock` command is implemented). 
 
-App uses RxAndroidBle library and custom implementation of secure BLE session. It is not using any tedee services and works only locally within the range of BLE. During the preparation steps, you will have to get the lock certificate manually.
+App uses RxAndroidBle library and custom implementation of secure BLE session. It is not using any Tedee services and works only locally within the range of BLE. During the preparation steps, you will have to get the lock certificate manually.
 
 With this example, you will be able to operate only one lock at a time.
 
@@ -28,8 +28,8 @@ With this example, you will be able to operate only one lock at a time.
 1.  [Android Studio](https://developer.android.com/studio)
 
 ### Other
-1. Tedee account created in tedee app
-2. Lock added and calibrated in tedee app
+1. Tedee account created in Tedee app
+2. Lock added and calibrated in Tedee app
 
 ## Initial configuration
 
@@ -61,25 +61,29 @@ Click on "Run 'app'" button or use `Shift + F10` to build project and run it on 
 On first launch app will ask you for permission to use Location and Bluetooth. Both are needed for Android app to access Bluetooth module.
 
 The app will also generate public key that is required to generate a lock certificate (see next steps). Look for `!!! Public key to register mobile:` in Logcat (bottom of Android Studio). Save the line below it for the next step. Pay attention to the Logcat, as you will see there also steps that are taken by the app to unlock the lock (connect, start an encrypted session, send unlock command, receive a response).
-### Step 4 - register tedee example app
-1. Log in to [tedee Portal](https://portal.tedee.com) with credentials from created tedee account 
+
+### Step 4 - register Tedee example app
+1. Log in to [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account 
 2. Click on your initials in top right corner 
 
 ![img2](https://user-images.githubusercontent.com/81370389/209111859-9c022725-1593-4bfd-9d71-72b9e58d4397.png)
 
 3. Click on Personal Access Keys and generate new access key with at least **Device certificates - Read** scope
-4. Go to [tedee API](https://api.tedee.com) and authorize yourself with created Personal Access Key
+4. Go to [Tedee API](https://api.tedee.com) and authorize yourself with created Personal Access Key
 5. Click "Authorize" button
 
 ![img9](https://user-images.githubusercontent.com/81370389/209112240-01764c21-16c8-4b42-86a6-5ee2374b81d7.png)
 
 6. Proper format is `PersonalKey [YOUR PERSONAL ACCESS KEY]`
 7. Confirm with `Authorize`
+
+> :information_source: You can also use one-time token by signing in after clicking "Azure B2C Login Page" on top of Swagger website. Paste returned token similarly as in step 6. in `Bearer [TOKEN]` format
+
 8. Go to `Mobile` section and use `POST /api/[api version]/my/mobile` route and click on `Try it out` button
 
 ![img13](https://user-images.githubusercontent.com/81370389/209114544-3764f0f9-0a03-41a7-bb67-426e1514f154.png)
 
-9. Enter `name` (lock name from tedee app), `operatingSystem` set to `3` and `publicKey` the one that was copied in "First launch" step
+9. Enter `name` (lock name from Tedee app), `operatingSystem` set to `3` and `publicKey` the one that was copied in "First launch" step
 10. Response will return `id` that is required in next step (as `MobileID`)
 11. Go to `DeviceCertificate` section and use `/api/[api version]/my/devicecertificate/getformobile`
 
@@ -87,7 +91,7 @@ The app will also generate public key that is required to generate a lock certif
 
 12. Click on `Try it out`
 13. Fill `MobileID` gathered from previous request response
-14. Fill `DeviceId` gathered from tedee app (click: Lock > Settings > Information > Device ID)
+14. Fill `DeviceId` gathered from Tedee app (click: Lock > Settings > Information > Device ID)
 15. Click `Execute`, store somewhere response result, you will need it in next step
 
 > :warning: Generated certificate has expiration date, which is attached to the response with certificate. After certificate expiration you will not be able to operate the lock and you need to get new one.
@@ -95,13 +99,13 @@ The app will also generate public key that is required to generate a lock certif
 ### Step 5 - add device certificate and serial number to project
 
 1. Open MainActivity.kt in project navigator
-2. Replace value of `LOCK_SERIAL` with your tedee lock serial number from tedee app (click: Lock > Settings > Information > Serial number)
+2. Replace value of `LOCK_SERIAL` with your Tedee lock serial number from Tedee app (click: Lock > Settings > Information > Serial number)
 3. Replace value of `CERTIFICATE` with `result.certificate` of API request 
 4. Replace value of `DEVICE_PUBLIC_KEY` with `result.devicePublicKey` of API request 
 
 ### Step 6 - operate the lock
 
-1. Make sure your lock was calibrated with tedee app and is in locked state 
+1. Close lock from Tedee app to make sure it is properly calibrated and secure time is set (example app does not have this process implemented)
 2. Compile and run app again with `Run 'app'` button or use `Shift + F10`
 3. Click "Connect" button
 4. After app connects to lock, click "Unlock" button

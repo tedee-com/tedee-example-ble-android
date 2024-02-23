@@ -5,14 +5,21 @@
 ## About
 
 This example project was created by the [Tedee](https://tedee.com) team to show you how to operate the Tedee Lock using Bluetooth Low Energy communication protocol.
+This project is developed using the Kotlin language and is designed to run on Android devices. It utilizes our Tedee Lock SDK, which can be accessed via the following link: [LINK TO SDK]().
+Navigate to the `build.gradle` file located in the Module: app directory. Within this file, locate the dependencies section where you'll find the dependency for the Tedee Lock SDK.
 
-This project was created using Kotlin language and it runs on Android devices.
+The purpose of this project is to demonstrate how you can integrate the Tedee Lock SDK into your own app. It provides you with the capability to:
+- Establish a Bluetooth connection with a Tedee Lock by providing necessary data such as the Lock's Serial Number, Certificate, and Mobile Public Key.
+- Disconnect the connection from the lock.
+- Send commands to the lock based on the BLE documentation.
+- Receive callbacks when the connection status changes.
+- Receive callbacks when indication messages are received.
+- Receive callbacks when notification messages are received.
+- Handle errors that occur during lock connection.
 
-The purpose of this project is to present how you can establish a Bluetooth connection with Tedee Lock, start an encrypted session and operate it (currently only the `Unlock` command is implemented). 
+App uses RxAndroidBle library and custom implementation of secure BLE session (All from Tedee Lock SDK). It is not using any Tedee services and works only locally within the range of BLE. During the preparation steps, you will have to get the lock certificate manually.
 
-App uses RxAndroidBle library and custom implementation of secure BLE session. It is not using any Tedee services and works only locally within the range of BLE. During the preparation steps, you will have to get the lock certificate manually.
-
-With this example, you will be able to operate only one lock at a time.
+With the SDK, you will be able to operate only one lock at a time.
 
 > :warning: This is just a simplified example of how to connect and send commands to lock. It omits security concerns, error handling, and best practices. This is not production-ready code.
 
@@ -62,7 +69,7 @@ On first launch app will ask you for permission to use Location and Bluetooth. B
 
 The app will also generate public key that is required to generate a lock certificate (see next steps). Look for `!!! Public key to register mobile:` in Logcat (bottom of Android Studio). Save the line below it for the next step. Pay attention to the Logcat, as you will see there also steps that are taken by the app to unlock the lock (connect, start an encrypted session, send unlock command, receive a response).
 
-### Step 4 - register Tedee example app
+### Step 4 - Register Tedee example app
 1. Log in to [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account 
 2. Click on your initials in top right corner 
 
@@ -96,21 +103,43 @@ The app will also generate public key that is required to generate a lock certif
 
 > :warning: Generated certificate has expiration date, which is attached to the response with certificate. After certificate expiration you will not be able to operate the lock and you need to get new one.
 
-### Step 5 - add device certificate and serial number to project
+### Step 5 - Add device certificate and serial number to project
 
 1. Open MainActivity.kt in project navigator
 2. Replace value of `LOCK_SERIAL` with your Tedee lock serial number from Tedee app (click: Lock > Settings > Information > Serial number)
 3. Replace value of `CERTIFICATE` with `result.certificate` of API request 
-4. Replace value of `DEVICE_PUBLIC_KEY` with `result.devicePublicKey` of API request 
+4. Replace value of `DEVICE_PUBLIC_KEY` with `result.devicePublicKey` of API request_
 
-### Step 6 - operate the lock
 
-1. Close lock from Tedee app to make sure it is properly calibrated and secure time is set (example app does not have this process implemented)
-2. Compile and run app again with `Run 'app'` button or use `Shift + F10`
-3. Click "Connect" button
-4. After app connects to lock, click "Unlock" button
-5. App should unlock the lock, see Logcat. `MESSAGE:` tag indicates BT message sent by mobile, `LOCK:` tag indicates BT response from lock. 51 is command id for unlock, response contains additional parameter. If the parameter is 00, the lock sucessfully started the operation.
+### Step 6 - Choose whether to keep the connection with the lock or not.
+
+> :warning: By default, the connection method from the Tedee Lock SDK has the keepConnection parameter set to false. However, in our example app, we set it to true:
+
+```
+lockConnectionManager.connect(
+    serialNumber = LOCK_SERIAL,
+    deviceCertificate = DeviceCertificate(CERTIFICATE, DEVICE_PUBLIC_KEY),
+    keepConnection = true,
+    listener = this
+)
+```
+
+When `keepConnection` is set to true, the app will attempt to maintain the connection for a longer period compared to when it is set to false.
+
+1. To change the `keepConnection` parameter, open MainActivity.kt in the project navigator.
+2. Find the`connectLock` method and change value for `keepConnection`.
+
+
+### Step 7 - Send a command to the lock
+
+1. Compile and run app again with `Run 'app'` button or use `Shift + F10`.
+2. Click the `Connect` button.
+3. Once the app is connected to the lock, you'll see two EditText fields and a `SEND` button. In the first EditText, you can input the `LOCK COMMAND` (e.g., 0x51 to open the lock). The second EditText is optional and allows you to input parameters to be sent with the command (e.g., 0x02 to force unlock). You can input multiple values in the params field by separating them with spaces (e.g., 0x02 0x04). For BLE commands documentation, refer to [Tedee Lock BLE API Documentation](https://tedee-tedee-lock-ble-api-doc.readthedocs-hosted.com/en/latest/index.html) and navigate to the `COMMANDS` section from the right menu.
+4. The app should execute the command, and you can observe the Logcat. Messages tagged with `MESSAGE:` indicate BT messages sent by the mobile device, while messages tagged with `LOCK LISTENER message:` indicate BT responses from the lock. For instance, the unlock command has a value of 51. The response may contain additional parameters. If the parameter is 00, the lock successfully initiated the operation. For more information, refer to [Tedee Lock BLE API Documentation](https://tedee-tedee-lock-ble-api-doc.readthedocs-hosted.com/en/latest/index.html).
 
 ![img15](https://user-images.githubusercontent.com/81370389/209112722-46611d90-0556-4725-8e9e-9b80aae2531c.png)
+
+5. The app listens for notifications from the lock. Check the Logcat for notifications tagged with `NOTIFICATION:`. For example, after sending the unlock command (0x51), the app listens for notifications and receives lock state changes if the operation is successful. The first state is opening state (0x04), followed by opened state (0x02). The logcat line will appear as: [NOTIFICATION: BA 04 00] for a state change to opening. Refer to [Tedee Lock BLE API Documentation](https://tedee-tedee-lock-ble-api-doc.readthedocs-hosted.com/en/latest/index.html) and navigate to the `NOTIFICATIONS` section from the right menu for more information about notifications.
+6. To close the BT connection between the app and the lock, simply click the `Disconnect` button.
 
 > :warning: If you are unable to connect to lock, please check if your mobile certificate did not change. It is deleted after every app uninstall. If it changes, repeat step 4

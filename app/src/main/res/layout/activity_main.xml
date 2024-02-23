@@ -1,43 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:app="http://schemas.android.com/apk/res-auto"
-  xmlns:tools="http://schemas.android.com/tools"
-  android:layout_width="match_parent"
-  android:layout_height="match_parent"
-  android:orientation="vertical"
-  android:paddingHorizontal="16dp"
-  android:gravity="center_horizontal"
-  android:paddingVertical="16dp"
-  app:layout_behavior="@string/appbar_scrolling_view_behavior"
-
-  tools:context=".MainActivity">
-
-  <TextView
-    android:id="@+id/serial_number"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:textSize="24sp" />
-
-  <Button
-    android:id="@+id/buttonConnect"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:text="Connect" />
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="16dp"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".MainActivity">
 
   <TextView
-    android:id="@+id/connectingState"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:textSize="24sp"
-    tools:text="Connecting" />
+      android:id="@+id/serial_number"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:textSize="24sp" />
 
   <Button
-    android:id="@+id/buttonUnlock"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:text="Unlock"
-    android:visibility="gone" />
+      android:id="@+id/buttonConnect"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16sp"
+      android:text="Connect" />
+
+  <Button
+      android:id="@+id/buttonDisconnect"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16sp"
+      android:text="Disconnect" />
+
+
+  <TextView
+      android:id="@+id/connectingState"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16sp"
+      android:textSize="16sp"
+      tools:text="Connecting" />
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/clCommands"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginStart="8dp"
+      android:layout_marginTop="16dp"
+      android:layout_marginEnd="8dp"
+      android:orientation="horizontal"
+      android:visibility="gone"
+      tools:visibility="visible">
+
+    <EditText
+        android:id="@+id/editTextCommand"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:hint="command"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="Autofill" />
+
+    <EditText
+        android:id="@+id/editTextParam"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:hint="param"
+        android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/editTextCommand"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="Autofill" />
+
+    <Button
+        android:id="@+id/buttonSendCommand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Send"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editTextCommand" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <TextView
+      android:id="@+id/commandResult"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16sp"
+      android:textSize="14sp"
+      tools:text="Command: " />
+
+  <TextView
+      android:id="@+id/notification"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16sp"
+      android:textSize="14sp"
+      tools:text="Notification: " />
 </LinearLayout>

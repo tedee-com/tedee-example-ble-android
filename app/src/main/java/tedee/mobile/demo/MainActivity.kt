@@ -1,155 +1,111 @@
 package tedee.mobile.demo
 
-import android.Manifest
-import android.os.Build
 import android.os.Bundle
-import android.os.ParcelUuid
 import android.text.SpannableStringBuilder
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.polidea.rxandroidble2.RxBleClient
-import com.polidea.rxandroidble2.scan.ScanFilter
-import com.polidea.rxandroidble2.scan.ScanSettings
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import tedee.mobile.demo.bluetooth.BluetoothConnectionWrapper
-import tedee.mobile.demo.bluetooth.BluetoothWrapperListener
-import tedee.mobile.demo.bluetooth.extractSerialNumber
-import tedee.mobile.demo.databinding.ActivityMainBinding
-import tedee.mobile.demo.extentions.print
-import tedee.mobile.demo.keystore.KeyStoreHelper
-import tedee.mobile.demo.model.DeviceCertificate
+import tedee.mobile.ble.example.databinding.ActivityMainBinding
+import tedee.mobile.sdk.ble.bluetooth.LockConnectionManager
+import tedee.mobile.sdk.ble.bluetooth.ILockConnectionListener
+import tedee.mobile.sdk.ble.extentions.getLockStatus
+import tedee.mobile.sdk.ble.extentions.getReadableLockCommandResult
+import tedee.mobile.sdk.ble.extentions.getReadableLockNotification
+import tedee.mobile.sdk.ble.extentions.getReadableLockState
+import tedee.mobile.sdk.ble.extentions.parseHexStringToByte
+import tedee.mobile.sdk.ble.extentions.parseHexStringToByteArray
+import tedee.mobile.sdk.ble.extentions.print
+import tedee.mobile.sdk.ble.keystore.checkPublicKey
+import tedee.mobile.sdk.ble.model.DeviceCertificate
+import tedee.mobile.sdk.ble.permissions.getBluetoothPermissions
 import timber.log.Timber
-import java.util.*
 
-private const val CERTIFICATE: String = "TODO"
-private const val DEVICE_PUBLIC_KEY: String = "TODO"
-private const val LOCK_SERIAL: String = "TODO"
-
-class MainActivity : AppCompatActivity(), BluetoothWrapperListener {
+class MainActivity : AppCompatActivity(), ILockConnectionListener {
 
   private lateinit var binding: ActivityMainBinding
-  private lateinit var rxBleClient: RxBleClient
 
-  private var connectionWrapper: BluetoothConnectionWrapper? = null
-  private var disposable: CompositeDisposable = CompositeDisposable()
+  private val lockConnectionManager by lazy { LockConnectionManager(this) }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    Timber.plant(Timber.DebugTree())
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
     binding.serialNumber.text = SpannableStringBuilder("LOCK: $LOCK_SERIAL")
-    binding.buttonConnect.setOnClickListener { connectToLockTemporary(LOCK_SERIAL) }
-    binding.buttonUnlock.setOnClickListener { connectionWrapper?.openLock() }
-    rxBleClient = RxBleClient.create(this)
-    checkPublicKey()
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
+    binding.buttonConnect.setOnClickListener {
+      connectLock()
+    }
+    binding.buttonDisconnect.setOnClickListener {
+      lockConnectionManager.disconnect()
+    }
+    binding.buttonSendCommand.setOnClickListener {
+      val message = parseHexStringToByte(binding.editTextCommand.text.toString())
+      val params = parseHexStringToByteArray(binding.editTextParam.text.toString())
+      message?.let { lockConnectionManager.sendCommand(it, params) }
+    }
+    checkPublicKey()
   }
 
-  private fun checkPublicKey() {
-    val publicKey = KeyStoreHelper.getMobilePublicKey()?.replace("\n", "\\n")
-    if (publicKey == null) {
-      KeyStoreHelper.generateMobileKeyPair(
-        { Timber.w("!!! Public key to register mobile:\n ${it.replace("\n", "\\n")}") },
-        { Timber.e("!!! Cannot generate key pair") }
-      )
-    } else {
-      Timber.w("!!! Public key to register mobile and get certificate:\n $publicKey")
-    }
+  private fun connectLock() {
+    lockConnectionManager.connect(
+      serialNumber = LOCK_SERIAL,
+      deviceCertificate = DeviceCertificate(CERTIFICATE, DEVICE_PUBLIC_KEY),
+      keepConnection = true,
+      listener = this
+    )
+    resetCommandResults()
+    changeConnectingState("Connecting")
   }
 
   override fun onDestroy() {
-    connectionWrapper?.closeConnection()
-    disposable.clear()
+    lockConnectionManager.clear()
     super.onDestroy()
   }
 
-  private fun getBluetoothPermissions() =
-    when {
-      Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-        mutableListOf(
-          Manifest.permission.ACCESS_COARSE_LOCATION,
-          Manifest.permission.ACCESS_FINE_LOCATION,
-          Manifest.permission.BLUETOOTH_SCAN,
-          Manifest.permission.BLUETOOTH_CONNECT
-        )
-      }
-      else -> listOf(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
-  private fun connectToLockTemporary(serialNumber: String) {
-    connectionWrapper?.closeConnection()
-    disposable.clear()
-    disposable.add(rxBleClient.observeStateChanges()
-      .startWith(rxBleClient.state)
-      .distinctUntilChanged()
-      .filter { it == RxBleClient.State.READY }
-      .flatMapSingle {
-        rxBleClient
-          .scanBleDevices(
-            ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
-            ScanFilter.Builder()
-              .setServiceUuid(ParcelUuid(UUID.fromString(BluetoothConstants.LOCK_SERVICE_UUID)))
-              .build()
-          )
-          .filter { scanResult ->
-            val bleDeviceSerialNumber =
-              extractSerialNumber(
-                scanResult.scanRecord.serviceUuids?.map { it.toString() },
-                BluetoothConstants.LOCK_SERVICE_UUID
-              )
-            serialNumber.equals(bleDeviceSerialNumber, true)
-          }
-          .map { it.bleDevice }
-          .firstOrError()
-      }
-      .firstOrError()
-      .doOnSubscribe { changeConnectingState("Scanning") }
-      .observeOn(AndroidSchedulers.mainThread())
-      .subscribe(
-        {
-          changeConnectingState("Connecting")
-          connectionWrapper?.closeConnection()
-          connectionWrapper = BluetoothConnectionWrapper(
-            serialNumber,
-            it,
-            DeviceCertificate(CERTIFICATE, DEVICE_PUBLIC_KEY),
-            this
-          ).also { wrapper -> wrapper.connect() }
-        },
-        { onError(it) }
-      )
-    )
+  private fun changeConnectingState(state: String) {
+    binding.connectingState.text = "State: $state"
   }
 
-  override fun onConnectionChanged(connected: Boolean, isSecure: Boolean) {
-    Timber.d("LOCK: connection changed: isConnected: $connected, isSecure: $isSecure")
-    binding.buttonUnlock.visibility = View.GONE
+  override fun onConnectionChanged(connected: Boolean) {
+    Timber.w("LOCK LISTENER: connection changed: isConnected: $connected")
+    binding.clCommands.visibility = View.GONE
+    resetCommandResults()
     when {
-      connected && isSecure -> {
+      connected -> {
         changeConnectingState("Secure session established")
-        binding.buttonUnlock.visibility = View.VISIBLE
+        binding.clCommands.visibility = View.VISIBLE
       }
-      connected && !isSecure -> changeConnectingState("Connected via BT")
+
       else -> changeConnectingState("Disconnected")
     }
   }
 
-  override fun onIndicationChanged(message: ByteArray) {
-    val readableMessage = message.print()
-    Timber.d("LOCK: message: $readableMessage")
-    Toast.makeText(this, readableMessage, Toast.LENGTH_SHORT).show()
+  override fun onIndication(message: ByteArray) {
+    Timber.d("LOCK LISTENER message: ${message.print()}")
+    val readableResult = message.getReadableLockCommandResult()
+    val formattedText = "onIndication: \nResult: $readableResult"
+    binding.commandResult.text = formattedText
+  }
+
+  override fun onNotification(message: ByteArray) {
+    if (message.isEmpty()) return
+    Timber.d("LOCK LISTENER: notification: ${message.print()}")
+    val readableNotification = message.getReadableLockNotification()
+    val readableState = if (message.size > 1) message[1].getReadableLockState() else return
+    val formattedText = "onNotification: \n$readableNotification " +
+        "\nCurrent state: $readableState \nStatus: ${message[2].getLockStatus()}"
+    binding.notification.text = formattedText
   }
 
   override fun onError(throwable: Throwable) {
-    Timber.e(throwable, "LOCK: error")
+    Timber.e(throwable, "LOCK LISTENER:: error $throwable")
     changeConnectingState("Disconnected")
-    Toast.makeText(this, "Error: ${throwable.localizedMessage}", Toast.LENGTH_SHORT).show()
+    Toast.makeText(this, "Error: ${throwable.javaClass.simpleName}", Toast.LENGTH_SHORT).show()
+    resetCommandResults()
   }
 
-  private fun changeConnectingState(state: String) {
-    binding.connectingState.text = state
+  private fun resetCommandResults() {
+    binding.commandResult.text = ""
+    binding.notification.text = ""
   }
 }

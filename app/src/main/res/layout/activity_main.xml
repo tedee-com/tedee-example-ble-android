@@ -11,32 +11,118 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".MainActivity">
 
-  <TextView
-      android:id="@+id/serial_number"
+  <EditText
+      android:id="@+id/editTextSerialNumber"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:textSize="24sp" />
+      android:layout_marginEnd="8dp"
+      android:layout_marginBottom="4dp"
+      android:hint="Serial number"
+      android:textSize="14sp"
+      android:text="20260201-000402"
+      tools:ignore="Autofill" />
 
-  <Button
-      android:id="@+id/buttonConnect"
+  <EditText
+      android:id="@+id/editTextDeviceName"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginVertical="4dp"
+      android:layout_marginEnd="8dp"
+      android:hint="Device name"
+      android:textSize="14sp"
+      android:text="Lock-3CC2 jr"
+      tools:ignore="Autofill" />
+
+  <EditText
+      android:id="@+id/editTextDeviceId"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:layout_marginEnd="8dp"
+      android:hint="Device ID"
+      android:inputType="number"
+      android:textSize="14sp"
+      android:text="46783"
+      tools:ignore="Autofill" />
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/clButtons"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+
+    <Button
+        android:id="@+id/buttonGenerateCertificate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:textSize="10sp"
+        android:text="Generate Certificate"
+        app:layout_constraintEnd_toStartOf="@+id/buttonConnect"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonConnect"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Connect"
+        android:layout_marginEnd="4dp"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toStartOf="@+id/buttonDisconnect"
+        app:layout_constraintStart_toEndOf="@+id/buttonGenerateCertificate"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonDisconnect"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="10sp"
+        android:text="Disconnect"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonConnect"
+        app:layout_constraintTop_toTopOf="parent" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:gravity="center"
+      android:orientation="horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingEnd="16dp"
+        android:text="Keep Connection: "
+        android:textSize="16sp" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switchKeepConnection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false" />
+
+  </LinearLayout>
+
+  <TextView
+      android:id="@+id/certificateStatus"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginTop="16sp"
-      android:text="Connect" />
-
-  <Button
-      android:id="@+id/buttonDisconnect"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="16sp"
-      android:text="Disconnect" />
-
+      android:layout_marginTop="8dp"
+      android:textSize="16sp"
+      tools:text="Certificate" />
 
   <TextView
       android:id="@+id/connectingState"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginTop="16sp"
+      android:layout_marginTop="8dp"
       android:textSize="16sp"
       tools:text="Connecting" />
 
@@ -44,9 +130,7 @@
       android:id="@+id/clCommands"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:layout_marginStart="8dp"
-      android:layout_marginTop="16dp"
-      android:layout_marginEnd="8dp"
+      android:layout_marginTop="8dp"
       android:orientation="horizontal"
       android:visibility="gone"
       tools:visibility="visible">
@@ -86,19 +170,9 @@
 
   </androidx.constraintlayout.widget.ConstraintLayout>
 
-  <TextView
-      android:id="@+id/commandResult"
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/recyclerView"
       android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="16sp"
-      android:textSize="14sp"
-      tools:text="Command: " />
+      android:layout_height="match_parent" />
 
-  <TextView
-      android:id="@+id/notification"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="16sp"
-      android:textSize="14sp"
-      tools:text="Notification: " />
 </LinearLayout>

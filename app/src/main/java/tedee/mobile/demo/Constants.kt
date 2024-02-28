@@ -1,5 +1,3 @@
 package tedee.mobile.demo
 
-val CERTIFICATE: String = ""
-val DEVICE_PUBLIC_KEY: String = ""
-val LOCK_SERIAL: String = ""
+val PERSONAL_ACCESS_KEY: String = "lazxcL.TF8P3m7Nr14GVUajP7NJ/w3TU1xynzbK4SVaf5WxRMM="

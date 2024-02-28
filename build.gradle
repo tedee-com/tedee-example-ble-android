@@ -6,8 +6,5 @@ plugins {
 }
 
 ext {
-    rxJavaVersion = '2.2.21'
-    rxAndroidVersion = '2.1.1'
-    rxKotlinVersion = '2.4.0'
     timberVersion = '5.0.1'
 }

@@ -27,7 +27,19 @@ class MobileService {
         throw Exception("Result is not a JsonObject")
       }
     } else {
-      throw Exception("Server error: ${response.code()}")
+      throw Exception(parseError(response))
     }
   }
+
+  private fun parseError(response: Response<JsonElement>): String {
+    val errorWrapper =
+      response.errorBody()?.let { ApiProvider.provideGson().fromJson(it.charStream(), ErrorWrapper::class.java) }
+    val responseError = errorWrapper?.errorMessages?.joinToString(separator = "|")
+    return "${errorWrapper?.statusCode}: ${responseError ?: "Unknown error"}"
+  }
+
+  class ErrorWrapper(
+    var errorMessages: List<String>?,
+    var statusCode: Int,
+  )
 }

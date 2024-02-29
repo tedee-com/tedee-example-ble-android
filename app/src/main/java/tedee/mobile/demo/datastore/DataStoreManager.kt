@@ -36,7 +36,6 @@ object DataStoreManager {
         emit(emptyPreferences())
       }
       .map { preferences ->
-        Timber.d("getCertificate from datastore - ${preferences[CERTIFICATE_KEY].orEmpty()}")
         preferences[CERTIFICATE_KEY].orEmpty()
       }.first()
   }
@@ -47,7 +46,6 @@ object DataStoreManager {
         emit(emptyPreferences())
       }
       .map { preferences ->
-        Timber.d("getDevicePublicKey from datastore - ${preferences[DEVICE_PUBLIC_KEY].orEmpty()}")
         preferences[DEVICE_PUBLIC_KEY].orEmpty()
       }.first()
   }
@@ -58,7 +56,6 @@ object DataStoreManager {
         emit(emptyPreferences())
       }
       .map { preferences ->
-        Timber.d("getMobilePublicKey from datastore - ${preferences[MOBILE_PUBLIC_KEY].orEmpty()}")
         preferences[MOBILE_PUBLIC_KEY]
       }.first()
   }

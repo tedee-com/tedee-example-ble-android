@@ -1,6 +1,7 @@
 package tedee.mobile.demo
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -50,12 +51,7 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
     setupCertificateData()
     setupRecyclerView()
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
-    binding.buttonGenerateCertificate.setOnClickListener {
-      registerAndGenerateCertificate(
-        binding.editTextDeviceName.text.toString(),
-        binding.editTextDeviceId.text.toString().toInt()
-      )
-    }
+    setupGenerateCertificateButton()
     binding.buttonConnect.setOnClickListener { connectLock() }
     binding.buttonDisconnect.setOnClickListener { lockConnectionManager.disconnect() }
     binding.switchKeepConnection.setOnCheckedChangeListener { _, isChecked ->
@@ -66,6 +62,7 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
       val params = parseHexStringToByteArray(binding.editTextParam.text.toString())
       message?.let { lockConnectionManager.sendCommand(it, params) }
     }
+    initPresetValues()
   }
 
   private fun connectLock() {
@@ -75,7 +72,6 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
       keepConnection = shouldKeepConnection,
       listener = this
     )
-    changeConnectingState("Connecting")
   }
 
   override fun onDestroy() {
@@ -84,8 +80,9 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
   }
 
   @SuppressLint("SetTextI18n")
-  private fun changeConnectingState(state: String) {
+  private fun changeConnectingState(state: String, color: Int = Color.WHITE) {
     binding.connectingState.text = "State: $state"
+    binding.connectingState.setTextColor(color)
   }
 
   @SuppressLint("SetTextI18n")
@@ -93,16 +90,18 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
     binding.certificateStatus.text = "Certificate: $status"
   }
 
-  override fun onConnectionChanged(connected: Boolean) {
+  override fun onConnectionChanged(isConnecting: Boolean, connected: Boolean) {
     Timber.w("LOCK LISTENER: connection changed: isConnected: $connected")
     binding.clCommands.visibility = View.GONE
     when {
+      isConnecting -> {
+        changeConnectingState("Connecting", Color.WHITE)
+      }
       connected -> {
-        changeConnectingState("Secure session established")
+        changeConnectingState("Secure session established", Color.GREEN)
         binding.clCommands.visibility = View.VISIBLE
       }
-
-      else -> changeConnectingState("Disconnected")
+      else -> changeConnectingState("Disconnected", Color.RED)
     }
   }
 
@@ -127,7 +126,7 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
 
   override fun onError(throwable: Throwable) {
     Timber.e(throwable, "LOCK LISTENER:: error $throwable")
-    changeConnectingState("Disconnected")
+    changeConnectingState("Disconnected", Color.RED)
     val errorMessage = "Error: ${throwable.javaClass.simpleName}"
     Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
     addMessage(errorMessage)
@@ -161,6 +160,18 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
     }
   }
 
+  private fun setupGenerateCertificateButton() {
+    binding.buttonGenerateCertificate.setOnClickListener {
+      val deviceName = binding.editTextDeviceName.text.toString()
+      val deviceId = binding.editTextDeviceId.text.toString()
+      if (deviceId.isNotBlank()) {
+        registerAndGenerateCertificate(deviceName, deviceId.toInt())
+      } else {
+        Toast.makeText(this, "Device ID have to be filled", Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
   private fun registerAndGenerateCertificate(deviceName: String, deviceId: Int) {
     changeCertificateStatus("")
     lifecycleScope.launch {
@@ -183,11 +194,24 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
         }
         certificate = certificateResult.certificate
         devicePublicKey = certificateResult.devicePublicKey
+
       } catch (error: Exception) {
         val message = "Request failed"
-        changeCertificateStatus(message)
-        Timber.e(error, message)
+        Toast.makeText(
+          this@MainActivity,
+          "Error: ${error.message}",
+          Toast.LENGTH_SHORT
+        ).show()
+        changeCertificateStatus(error.message ?: message)
+        Timber.e(error, error.message ?: message)
       }
     }
+  }
+
+  private fun initPresetValues() {
+    PRESET_DEVICE_ID.takeIf { it.isNotEmpty() }?.let { binding.editTextDeviceId.setText(it) }
+    PRESET_SERIAL_NUMBER.takeIf { it.isNotEmpty() }
+      ?.let { binding.editTextSerialNumber.setText(it) }
+    PRESET_NAME.takeIf { it.isNotEmpty() }?.let { binding.editTextDeviceName.setText(it) }
   }
 }

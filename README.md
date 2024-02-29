@@ -6,7 +6,8 @@
 
 This example project was created by the [Tedee](https://tedee.com) team to show you how to operate the Tedee Lock using Bluetooth Low Energy communication protocol.
 This project is developed using the Kotlin language and is designed to run on Android devices. It utilizes our Tedee Lock SDK, which can be accessed via the following link: [LINK TO SDK](https://github.com/tedee-com/tedee-mobile-sdk-android).
-Navigate to the `build.gradle` file located in the Module: app directory. Within this file, locate the dependencies section where you'll find the dependency for the Tedee Lock SDK. (`implementation("com.tedee:android-ble-sdk:<LATEST_VERSION>")`)
+
+In example app navigate to the `build.gradle` file located in the Module: app directory. Within this file, locate the dependencies section where you'll find the dependency for the Tedee Lock SDK. `implementation("com.tedee:android-ble-sdk:<LATEST_VERSION>`
 
 The purpose of this project is to demonstrate how you can integrate the Tedee Lock SDK into your own app. It provides you with the capability to:
 - Establish a Bluetooth connection with a Tedee Lock by providing necessary data such as the Lock's Serial Number, Certificate, Mobile Public Key, Device ID and  Device Name.
@@ -114,6 +115,7 @@ Please keep an eye on the Logcat as it will display the sequence of actions the 
 8. Go to `DeviceCertificate` section and use `/api/[api version]/my/devicecertificate/getformobile`
 
 ![img10](https://user-images.githubusercontent.com/81370389/209114588-68facc13-b162-48f7-baaa-6dd605b2228a.png)
+
 9. Click on `Try it out`
 10. Fill `MobileID` gathered from previous request response
 11. Fill `DeviceId` gathered from Tedee app (click: Lock > Settings > Information > Device ID)

@@ -49,5 +49,5 @@ dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
 
     //Tedee Lock SDK
-    implementation "com.github.tedee-com:tedee-mobile-sdk-android:v0.0.7"
+    implementation("com.github.tedee-com:tedee-mobile-sdk-android:v0.0.8")
 }

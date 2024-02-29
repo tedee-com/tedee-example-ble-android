@@ -128,7 +128,8 @@ Please keep an eye on the Logcat as it will display the sequence of actions the 
 1. Open MainActivity.kt in project navigator
 2. Replace value of `certificate` with `result.certificate` of API request
 3. Replace value of `devicePublicKey` with `result.devicePublicKey` of API request
-4. Compile and run app again with `Run 'app'` button or use `Shift + F10`. You won't need to click `Generate certificate` again, as you now have the necessary information.
+4. Comment out the `setupCertificateData` method call to prevent its execution.
+5. Compile and run app again with `Run 'app'` button or use `Shift + F10`. You won't need to click `Generate certificate` again, as you now have the necessary information.
 
 ### Step 9 - Choose whether to keep the connection with the lock or not
 

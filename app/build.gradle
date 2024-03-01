@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace 'tedee.mobile.demo'
-    compileSdk 34
+    compileSdk 32
 
     defaultConfig {
         applicationId "tedee.mobile.demo"
         minSdk 26
-        targetSdk 34
+        targetSdk 32
         versionCode 1
         versionName "1.0"
 
@@ -40,18 +40,15 @@ dependencies {
     implementation "io.reactivex.rxjava2:rxjava:${rxJavaVersion}"
     implementation "io.reactivex.rxjava2:rxkotlin:${rxKotlinVersion}"
     implementation "com.jakewharton.timber:timber:${timberVersion}"
-    implementation "com.polidea.rxandroidble2:rxandroidble:1.17.2"
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation "com.polidea.rxandroidble2:rxandroidble:1.16.0"
+
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.7'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.7.7'
-
-    //Tedee Lock SDK
-    // ToDo
-
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.5.3'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.5.3'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.4'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }

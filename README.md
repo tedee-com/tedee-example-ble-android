@@ -51,16 +51,16 @@ With the SDK, you will be able to operate only one lock at a time.
 2. Enable `USB debugging` in `Developer Options`
 3. Open Android Studio, connect the phone via USB
 4. Your phone may display a popup asking about trusting PC, approve the connection.
-5. Now you should see your Android device in top bar 
+5. Now you should see your Android device in top bar
 
-  ![img11](https://user-images.githubusercontent.com/81370389/209111218-89542388-71e3-4379-80aa-2138baec4424.png)
+![img11](https://user-images.githubusercontent.com/81370389/209111218-89542388-71e3-4379-80aa-2138baec4424.png)
 
 > :warning: USB debugging allows to control your phone from any connected computer. Make sure to disable it after finishing working on the project.
 
 ### Step 3 - Running project
 **Now you are ready to build the project and upload it to your device.**
 
-Click on "Run 'app'" button or use `Shift + F10` to build project and run it on connected device. 
+Click on "Run 'app'" button or use `Shift + F10` to build project and run it on connected device.
 
 #### First Launch
 On first launch app will ask you for permission to use Location and Bluetooth. Both are needed for Android app to access Bluetooth module.
@@ -68,8 +68,8 @@ When you first open the app, it will generate a `Mobile Public Key`. This key is
 Please keep an eye on the Logcat as it will display the sequence of actions the app performs to the lock. These actions include connecting to the lock, starting an encrypted session, sending any commands, and receiving a response.
 
 ### Step 4 - Create Personal Access Key
-1. Log in to [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account 
-2. Click on your initials in top right corner 
+1. Log in to [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account
+2. Click on your initials in top right corner
 
 ![img2](https://user-images.githubusercontent.com/81370389/209111859-9c022725-1593-4bfd-9d71-72b9e58d4397.png)
 

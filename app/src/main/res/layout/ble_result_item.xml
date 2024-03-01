@@ -1,0 +1,18 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/midnight_blue"
+    android:padding="8dp"
+    android:layout_marginVertical="2dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/commandResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@color/white"
+        tools:text="Message: " />
+
+</LinearLayout>

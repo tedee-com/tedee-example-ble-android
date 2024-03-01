@@ -1,43 +1,175 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:app="http://schemas.android.com/apk/res-auto"
-  xmlns:tools="http://schemas.android.com/tools"
-  android:layout_width="match_parent"
-  android:layout_height="match_parent"
-  android:orientation="vertical"
-  android:paddingHorizontal="16dp"
-  android:gravity="center_horizontal"
-  android:paddingVertical="16dp"
-  app:layout_behavior="@string/appbar_scrolling_view_behavior"
-
-  tools:context=".MainActivity">
-
-  <TextView
-    android:id="@+id/serial_number"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:textSize="24sp" />
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="16dp"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".MainActivity">
 
-  <Button
-    android:id="@+id/buttonConnect"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:text="Connect" />
+  <EditText
+      android:id="@+id/editTextSerialNumber"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginEnd="8dp"
+      android:layout_marginBottom="4dp"
+      android:hint="Serial number"
+      android:textSize="14sp"
+      tools:ignore="Autofill" />
+
+  <EditText
+      android:id="@+id/editTextDeviceName"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginVertical="4dp"
+      android:layout_marginEnd="8dp"
+      android:hint="Device name"
+      android:textSize="14sp"
+      tools:ignore="Autofill" />
+
+  <EditText
+      android:id="@+id/editTextDeviceId"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="4dp"
+      android:layout_marginEnd="8dp"
+      android:hint="Device ID"
+      android:inputType="number"
+      android:textSize="14sp"
+      tools:ignore="Autofill" />
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/clButtons"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal">
+
+    <Button
+        android:id="@+id/buttonGenerateCertificate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:textSize="10sp"
+        android:text="Generate Certificate"
+        app:layout_constraintEnd_toStartOf="@+id/buttonConnect"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonConnect"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Connect"
+        android:layout_marginEnd="4dp"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toStartOf="@+id/buttonDisconnect"
+        app:layout_constraintStart_toEndOf="@+id/buttonGenerateCertificate"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonDisconnect"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="10sp"
+        android:text="Disconnect"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonConnect"
+        app:layout_constraintTop_toTopOf="parent" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:gravity="center"
+      android:orientation="horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingEnd="16dp"
+        android:text="Keep Connection: "
+        android:textSize="16sp" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switchKeepConnection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="false" />
+
+  </LinearLayout>
 
   <TextView
-    android:id="@+id/connectingState"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:textSize="24sp"
-    tools:text="Connecting" />
+      android:id="@+id/certificateStatus"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:textSize="16sp"
+      tools:text="Certificate" />
 
-  <Button
-    android:id="@+id/buttonUnlock"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="16sp"
-    android:text="Unlock"
-    android:visibility="gone" />
+  <TextView
+      android:id="@+id/connectingState"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:textSize="16sp"
+      tools:text="Connecting" />
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/clCommands"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:orientation="horizontal"
+      android:visibility="gone"
+      tools:visibility="visible">
+
+    <EditText
+        android:id="@+id/editTextCommand"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:hint="command"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="Autofill" />
+
+    <EditText
+        android:id="@+id/editTextParam"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:hint="param"
+        android:inputType="text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/editTextCommand"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="Autofill" />
+
+    <Button
+        android:id="@+id/buttonSendCommand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Send"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editTextCommand" />
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <androidx.recyclerview.widget.RecyclerView
+      android:id="@+id/recyclerView"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent" />
+
 </LinearLayout>

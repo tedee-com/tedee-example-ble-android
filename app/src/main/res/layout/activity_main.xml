@@ -19,7 +19,6 @@
       android:layout_marginBottom="4dp"
       android:hint="Serial number"
       android:textSize="14sp"
-      android:text="20260201-000402"
       tools:ignore="Autofill" />
 
   <EditText
@@ -30,7 +29,6 @@
       android:layout_marginEnd="8dp"
       android:hint="Device name"
       android:textSize="14sp"
-      android:text="Lock-3CC2 jr"
       tools:ignore="Autofill" />
 
   <EditText
@@ -42,7 +40,6 @@
       android:hint="Device ID"
       android:inputType="number"
       android:textSize="14sp"
-      android:text="46783"
       tools:ignore="Autofill" />
 
   <androidx.constraintlayout.widget.ConstraintLayout

@@ -17,6 +17,7 @@ import tedee.mobile.demo.certificate.data.model.MobileRegistrationBody
 import tedee.mobile.demo.certificate.service.MobileService
 import tedee.mobile.demo.databinding.ActivityMainBinding
 import tedee.mobile.demo.datastore.DataStoreManager
+import tedee.mobile.demo.datastore.DataStoreManager.getMobilePublicKey
 import tedee.mobile.sdk.ble.bluetooth.ILockConnectionListener
 import tedee.mobile.sdk.ble.bluetooth.LockConnectionManager
 import tedee.mobile.sdk.ble.extentions.getLockStatus
@@ -26,6 +27,7 @@ import tedee.mobile.sdk.ble.extentions.getReadableLockState
 import tedee.mobile.sdk.ble.extentions.parseHexStringToByte
 import tedee.mobile.sdk.ble.extentions.parseHexStringToByteArray
 import tedee.mobile.sdk.ble.extentions.print
+import tedee.mobile.sdk.ble.keystore.getMobilePublicKey
 import tedee.mobile.sdk.ble.model.DeviceCertificate
 import tedee.mobile.sdk.ble.permissions.getBluetoothPermissions
 import timber.log.Timber
@@ -97,10 +99,12 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
       isConnecting -> {
         changeConnectingState("Connecting", Color.WHITE)
       }
+
       connected -> {
         changeConnectingState("Secure session established", Color.GREEN)
         binding.clCommands.visibility = View.VISIBLE
       }
+
       else -> changeConnectingState("Disconnected", Color.RED)
     }
   }
@@ -148,15 +152,14 @@ class MainActivity : AppCompatActivity(), ILockConnectionListener {
 
   private fun setupMobilePublicKey() {
     lifecycleScope.launch {
-      mobilePublicKey =
-        DataStoreManager.getMobilePublicKey(this@MainActivity) ?: getMobilePublicKey().orEmpty()
+      mobilePublicKey = getMobilePublicKey(applicationContext) ?: getMobilePublicKey().orEmpty()
     }
   }
 
   private fun setupCertificateData() {
     lifecycleScope.launch {
-      certificate = DataStoreManager.getCertificate(this@MainActivity)
-      devicePublicKey = DataStoreManager.getDevicePublicKey(this@MainActivity)
+      certificate = DataStoreManager.getCertificate(applicationContext)
+      devicePublicKey = DataStoreManager.getDevicePublicKey(applicationContext)
     }
   }
 

@@ -54,8 +54,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="4dp"
-        android:textSize="10sp"
         android:text="Generate Certificate"
+        android:textSize="10sp"
         app:layout_constraintEnd_toStartOf="@+id/buttonConnect"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -65,8 +65,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Connect"
         android:layout_marginEnd="4dp"
+
+        android:text="Connect"
         android:textSize="10sp"
         app:layout_constraintEnd_toStartOf="@+id/buttonDisconnect"
         app:layout_constraintStart_toEndOf="@+id/buttonGenerateCertificate"
@@ -77,35 +78,51 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:textSize="10sp"
         android:text="Disconnect"
+        android:textSize="10sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/buttonConnect"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/buttonSetSignedTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Set Signed Time"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toStartOf="@+id/llKeepConnection"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGenerateCertificate" />
+
+    <LinearLayout
+        android:id="@+id/llKeepConnection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonSetSignedTime"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGenerateCertificate">
+
+      <TextView
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:paddingEnd="16dp"
+          android:text="Keep Connection: "
+          android:textSize="16sp" />
+
+      <androidx.appcompat.widget.SwitchCompat
+          android:id="@+id/switchKeepConnection"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:checked="true" />
+
+    </LinearLayout>
+
   </androidx.constraintlayout.widget.ConstraintLayout>
-
-  <LinearLayout
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="8dp"
-      android:gravity="center"
-      android:orientation="horizontal">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingEnd="16dp"
-        android:text="Keep Connection: "
-        android:textSize="16sp" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/switchKeepConnection"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="false" />
-
-  </LinearLayout>
 
   <TextView
       android:id="@+id/certificateStatus"
@@ -147,9 +164,9 @@
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
-        android:hint="param"
+        android:hint="params"
         android:inputType="text"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/buttonSendCommand"
         app:layout_constraintStart_toEndOf="@+id/editTextCommand"
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="Autofill" />
@@ -158,12 +175,105 @@
         android:id="@+id/buttonSendCommand"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:text="Send"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/editTextParam"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/clActionButtons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextCommand" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonSendCommand">
+
+      <Button
+          android:id="@+id/buttonGetLockState"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Get Lock State"
+          android:textSize="10sp"
+          app:layout_constraintEnd_toStartOf="@+id/buttonOpenLock"
+          app:layout_constraintStart_toStartOf="parent"
+          app:layout_constraintTop_toTopOf="parent" />
+
+      <Button
+          android:id="@+id/buttonOpenLock"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Open"
+          android:textSize="10sp"
+          app:layout_constraintEnd_toStartOf="@+id/spinnerOpenParams"
+          app:layout_constraintStart_toEndOf="@+id/buttonGetLockState"
+          app:layout_constraintTop_toTopOf="parent" />
+
+      <TextView
+          android:id="@+id/openLockParam"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Open Lock Param:"
+          android:textSize="12sp"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@+id/buttonOpenLock"
+          app:layout_constraintTop_toTopOf="parent" />
+
+      <Spinner
+          android:id="@+id/spinnerOpenParams"
+          android:layout_width="100dp"
+          android:layout_height="wrap_content"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@+id/buttonOpenLock"
+          app:layout_constraintTop_toBottomOf="@+id/openLockParam" />
+
+      <Button
+          android:id="@+id/buttonPullLock"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Pull Spring"
+          android:textSize="10sp"
+          app:layout_constraintEnd_toStartOf="@+id/buttonCloseLock"
+          app:layout_constraintStart_toStartOf="parent"
+          app:layout_constraintTop_toBottomOf="@+id/buttonGetLockState" />
+
+      <Button
+          android:id="@+id/buttonCloseLock"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Close"
+          android:textSize="10sp"
+          app:layout_constraintEnd_toStartOf="@+id/spinnerCloseParams"
+          app:layout_constraintStart_toEndOf="@+id/buttonPullLock"
+          app:layout_constraintTop_toBottomOf="@+id/buttonGetLockState" />
+
+      <TextView
+          android:id="@+id/closeLockParam"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_marginTop="8dp"
+          android:text="Close Lock Param:"
+          android:textSize="12sp"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@+id/buttonCloseLock"
+          app:layout_constraintTop_toBottomOf="@+id/buttonGetLockState" />
+
+      <Spinner
+          android:id="@+id/spinnerCloseParams"
+          android:layout_width="100dp"
+          android:layout_height="wrap_content"
+          app:layout_constraintEnd_toEndOf="parent"
+          app:layout_constraintStart_toEndOf="@+id/buttonCloseLock"
+          app:layout_constraintTop_toBottomOf="@+id/closeLockParam" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
   </androidx.constraintlayout.widget.ConstraintLayout>
 

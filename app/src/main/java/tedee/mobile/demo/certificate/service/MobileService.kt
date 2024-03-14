@@ -5,6 +5,7 @@ import retrofit2.Response
 import tedee.mobile.demo.certificate.data.model.MobileCertificateResponse
 import tedee.mobile.demo.certificate.data.model.MobileRegistrationBody
 import tedee.mobile.demo.certificate.data.model.RegisterMobileResponse
+import tedee.mobile.sdk.ble.model.SignedTime
 
 class MobileService {
 
@@ -16,6 +17,11 @@ class MobileService {
   suspend fun getCertificate(mobileId: String, deviceId: Int): MobileCertificateResponse {
     val response = ApiProvider.provideApi().getCertificate(mobileId, deviceId)
     return processResponse(response, MobileCertificateResponse::class.java)
+  }
+
+  suspend fun getSignedTime(): SignedTime {
+    val response = ApiProvider.provideApi().getSignedTime()
+    return processResponse(response, SignedTime::class.java)
   }
 
   private fun <T> processResponse(response: Response<JsonElement>, clazz: Class<T>): T {

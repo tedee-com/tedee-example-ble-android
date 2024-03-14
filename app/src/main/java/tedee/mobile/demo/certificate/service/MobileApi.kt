@@ -17,4 +17,7 @@ interface MobileApi {
     @Query("MobileId") mobileId: String,
     @Query("DeviceId") deviceId: Int,
   ): Response<JsonElement>
+
+  @GET("api/v1.32/datetime/getsignedtime")
+  suspend fun getSignedTime(): Response<JsonElement>
 }

@@ -1,3 +1,13 @@
 <resources>
   <string name="app_name">Tedee Demo</string>
+  <string-array name="spinner_open_options">
+    <item>None (0x00)</item>
+    <item>Auto (0x01)</item>
+    <item>Force (0x02)</item>
+    <item>Without pull (0x03)</item>
+  </string-array>
+  <string-array name="spinner_close_options">
+    <item>None (0x00)</item>
+    <item>Force (0x02)</item>
+  </string-array>
 </resources>

@@ -2,6 +2,10 @@
 
 ![lock](https://user-images.githubusercontent.com/81370389/209109383-c9163001-cc5b-418b-be65-87906a3cc11c.jpg)
 
+## Documentation
+
+[Mobile SDK Documentation](https://tedee-com.github.io/tedee-mobile-sdk-android/)
+
 ## About
 
 This example project was created by the [Tedee](https://tedee.com) team to show you how to operate the Tedee Lock using Bluetooth Low Energy communication protocol.

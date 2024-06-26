@@ -5,11 +5,11 @@ import androidx.lifecycle.LifecycleCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tedee.mobile.demo.certificate.data.model.MobileCertificateResponse
-import tedee.mobile.demo.certificate.data.model.MobileRegistrationBody
-import tedee.mobile.demo.certificate.data.model.RegisterMobileResponse
+import tedee.mobile.demo.api.data.model.MobileCertificateResponse
+import tedee.mobile.demo.api.data.model.MobileRegistrationBody
+import tedee.mobile.demo.api.data.model.RegisterMobileResponse
 import tedee.mobile.demo.datastore.DataStoreManager.getMobilePublicKey
-import tedee.mobile.demo.certificate.service.MobileService
+import tedee.mobile.demo.api.service.MobileService
 import tedee.mobile.demo.datastore.DataStoreManager
 import tedee.mobile.sdk.ble.keystore.getMobilePublicKey
 

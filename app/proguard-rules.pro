@@ -81,8 +81,8 @@
 # Optional. For using GSON @Expose annotation
 -keepattributes AnnotationDefault,RuntimeVisibleAnnotations
 
--keep class tedee.mobile.ble.example.certificate.data.model.** { *; }
--keep class tedee.mobile.ble.example.certificate.service.MobileService$ErrorWrapper { *; }
+-keep class tedee.mobile.demo.api.data.model.** { *; }
+-keep class tedee.mobile.demo.api.service.MobileService$ErrorWrapper { *; }
 
 -keepattributes SourceFile,LineNumberTable
 

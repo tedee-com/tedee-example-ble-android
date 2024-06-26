@@ -42,6 +42,14 @@
       android:textSize="14sp"
       tools:ignore="Autofill" />
 
+  <Button
+      android:id="@+id/buttonNavigateToAddDevice"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:text="Navigate to Add Device"
+      android:textSize="10sp" />
+
   <androidx.constraintlayout.widget.ConstraintLayout
       android:id="@+id/clButtons"
       android:layout_width="match_parent"
@@ -53,21 +61,18 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="4dp"
         android:text="Generate Certificate"
         android:textSize="10sp"
-        app:layout_constraintEnd_toStartOf="@+id/buttonConnect"
+        app:layout_constraintEnd_toStartOf="@+id/buttonSecureConnect"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/buttonConnect"
+        android:id="@+id/buttonSecureConnect"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="4dp"
-
-        android:text="Connect"
+        android:text="Secure\nConnect"
         android:textSize="10sp"
         app:layout_constraintEnd_toStartOf="@+id/buttonDisconnect"
         app:layout_constraintStart_toEndOf="@+id/buttonGenerateCertificate"
@@ -81,7 +86,7 @@
         android:text="Disconnect"
         android:textSize="10sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/buttonConnect"
+        app:layout_constraintStart_toEndOf="@+id/buttonSecureConnect"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
@@ -89,7 +94,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Set Signed Time"
+        android:text="Set Signed\nTime"
         android:textSize="10sp"
         app:layout_constraintEnd_toStartOf="@+id/llKeepConnection"
         app:layout_constraintStart_toStartOf="parent"
@@ -110,9 +115,9 @@
       <TextView
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
-          android:paddingEnd="16dp"
-          android:text="Keep Connection: "
-          android:textSize="16sp" />
+          android:paddingEnd="8dp"
+          android:text="Keep\nConnection: "
+          android:textSize="14sp" />
 
       <androidx.appcompat.widget.SwitchCompat
           android:id="@+id/switchKeepConnection"
@@ -129,7 +134,7 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginTop="8dp"
-      android:textSize="16sp"
+      android:textSize="14sp"
       tools:text="Certificate" />
 
   <TextView
@@ -137,7 +142,7 @@
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_marginTop="8dp"
-      android:textSize="16sp"
+      android:textSize="14sp"
       tools:text="Connecting" />
 
   <androidx.constraintlayout.widget.ConstraintLayout
@@ -274,6 +279,49 @@
           app:layout_constraintTop_toBottomOf="@+id/closeLockParam" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
+
+  <androidx.constraintlayout.widget.ConstraintLayout
+      android:id="@+id/clAddingDevice"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="horizontal"
+      android:visibility="gone"
+      tools:visibility="visible">
+
+    <Button
+        android:id="@+id/buttonGetDeviceSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Get Device\nSettings"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toStartOf="@+id/buttonGetFirmwareVersion"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonGetFirmwareVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Get Firmware\nVersion"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toStartOf="@+id/buttonGetSignature"
+        app:layout_constraintStart_toEndOf="@+id/buttonGetDeviceSettings"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/buttonGetSignature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Get\nSignature"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonGetFirmwareVersion"
+        app:layout_constraintTop_toTopOf="parent" />
 
   </androidx.constraintlayout.widget.ConstraintLayout>
 

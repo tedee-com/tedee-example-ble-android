@@ -14,6 +14,7 @@ This project is developed using the Kotlin language and is designed to run on An
 In example app navigate to the `build.gradle` file located in the Module: app directory. Within this file, locate the dependencies section where you'll find the dependency for the Tedee Lock SDK. `implementation("com.tedee:android-ble-sdk:<LATEST_VERSION>`
 
 The purpose of this project is to demonstrate how you can integrate the Tedee Lock SDK into your own app. It provides you with the capability to:
+- Add Tedee Lock to your account [LINK TO DOCUMENTATION](./ADD_LOCK_README.md)
 - Establish a Bluetooth connection with a Tedee Lock by providing necessary data such as the Lock's Serial Number, Certificate, Mobile Public Key, Device ID and  Device Name.
 - Disconnect the connection from the lock.
 - Send commands to the lock based on the BLE documentation.

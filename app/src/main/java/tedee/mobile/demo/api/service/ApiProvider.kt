@@ -1,4 +1,4 @@
-package tedee.mobile.demo.certificate.service
+package tedee.mobile.demo.api.service
 
 import com.google.gson.Gson
 import okhttp3.Interceptor

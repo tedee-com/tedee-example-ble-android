@@ -11,31 +11,35 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.launch
 import tedee.mobile.demo.PRESET_DEVICE_ID
 import tedee.mobile.demo.PRESET_NAME
 import tedee.mobile.demo.PRESET_SERIAL_NUMBER
 import tedee.mobile.demo.R
 import tedee.mobile.demo.adapter.BleResultItem
 import tedee.mobile.demo.adapter.BleResultsAdapter
-import tedee.mobile.demo.certificate.data.model.MobileCertificateResponse
-import tedee.mobile.demo.certificate.data.model.RegisterMobileResponse
+import tedee.mobile.demo.api.data.model.MobileCertificateResponse
+import tedee.mobile.demo.api.data.model.RegisterMobileResponse
 import tedee.mobile.demo.databinding.ActivityMainBinding
 import tedee.mobile.demo.manager.CertificateManager
 import tedee.mobile.demo.manager.SignedTimeManager
 import tedee.mobile.sdk.ble.BluetoothConstants
 import tedee.mobile.sdk.ble.bluetooth.ILockConnectionListener
-import tedee.mobile.sdk.ble.model.SignedTime
+import tedee.mobile.sdk.ble.bluetooth.error.DeviceNeedsResetError
 import tedee.mobile.sdk.ble.extentions.parseHexStringToByte
 import tedee.mobile.sdk.ble.extentions.parseHexStringToByteArray
 import tedee.mobile.sdk.ble.model.DeviceCertificate
+import tedee.mobile.sdk.ble.model.DeviceSettings
+import tedee.mobile.sdk.ble.model.FirmwareVersion
+import tedee.mobile.sdk.ble.model.SignedTime
 import timber.log.Timber
 
 class UiSetupHelper(
   private val context: Context,
   private val binding: ActivityMainBinding,
   private val lifecycleScope: LifecycleCoroutineScope,
-  private val listener: ILockConnectionListener,
-) {
+  private val secureConnectionListener: ILockConnectionListener
+) : UiHelper {
 
   private val items: MutableList<BleResultItem> = mutableListOf()
   private val bleResultsAdapter: BleResultsAdapter by lazy { BleResultsAdapter() }
@@ -45,6 +49,7 @@ class UiSetupHelper(
   private val signedTimeManager: SignedTimeManager by lazy { SignedTimeManager(lifecycleScope) }
   private var openLockParam: Byte = BluetoothConstants.PARAM_NONE
   private var closeLockParam: Byte = BluetoothConstants.PARAM_NONE
+  private var isSecureConnected: Boolean = false
 
   fun setup() {
     initPresetValues()
@@ -56,20 +61,25 @@ class UiSetupHelper(
     setupCloseLockParamsSpinner()
   }
 
-  fun setupConnectClickListener(
+  fun setupSecureConnectClickListener(
     connectLock: (
       serialNumber: String,
       deviceCertificate: DeviceCertificate,
       keepConnection: Boolean,
-      listener: ILockConnectionListener,
+      secureConnectionListener: ILockConnectionListener,
     ) -> Unit,
   ) {
-    binding.buttonConnect.setOnClickListener {
+    binding.buttonSecureConnect.setOnClickListener {
       val serialNumber = binding.editTextSerialNumber.text.toString()
       val keepConnection = binding.switchKeepConnection.isChecked
       val deviceCertificate =
         DeviceCertificate(certificateManager.certificate, certificateManager.devicePublicKey)
-      connectLock(serialNumber, deviceCertificate, keepConnection, listener)
+      connectLock(
+        serialNumber,
+        deviceCertificate,
+        keepConnection,
+        secureConnectionListener
+      )
       changeConnectingState("Searching...")
     }
   }
@@ -106,11 +116,43 @@ class UiSetupHelper(
     binding.buttonSetSignedTime.setOnClickListener { getAndSetSignedTime(setSignedTime) }
   }
 
+  fun setupGetDeviceSettingsClickListener(getDeviceSettings: suspend (Boolean) -> DeviceSettings?) {
+    binding.buttonGetDeviceSettings.setOnClickListener {
+      lifecycleScope.launch {
+        try {
+          val deviceSettings = getDeviceSettings(isSecureConnected)
+          Timber.d("Device settings: $deviceSettings")
+          Toast.makeText(context, "$deviceSettings", Toast.LENGTH_SHORT).show()
+        } catch (e: DeviceNeedsResetError) {
+          Timber.e(e, "Device settings: DeviceNeedsResetError = $e")
+        } catch (e: Exception) {
+          Timber.e(e, "Device settings: Other exception = $e")
+        }
+      }
+    }
+  }
+
+  fun setupGetFirmwareVersionClickListener(getFirmwareVersion: suspend (Boolean) -> FirmwareVersion?) {
+    binding.buttonGetFirmwareVersion.setOnClickListener {
+      lifecycleScope.launch {
+        try {
+          val firmwareVersion = getFirmwareVersion(isSecureConnected)
+          Timber.d("Firmware version: $firmwareVersion")
+          Toast.makeText(context, "$firmwareVersion", Toast.LENGTH_SHORT).show()
+        } catch (e: DeviceNeedsResetError) {
+          Timber.e(e, "Firmware version: DeviceNeedsResetError = $e")
+        } catch (e: Exception) {
+          Timber.e(e, "Firmware version: Other exception = $e")
+        }
+      }
+    }
+  }
+
   private fun getAndSetSignedTime(setSignedTime: (SignedTime) -> Unit) {
     signedTimeManager.getSignedTime(setSignedTime, ::onFailureRequest)
   }
 
-  suspend fun getSignedTime() = signedTimeManager.getSignedTime()
+  override suspend fun getSignedTime(): SignedTime = signedTimeManager.getSignedTime()
 
   @SuppressLint("SetTextI18n")
   fun changeConnectingState(state: String, color: Int = Color.WHITE) {
@@ -127,6 +169,11 @@ class UiSetupHelper(
 
   fun setCommandsSectionVisibility(isVisible: Boolean) {
     binding.clCommands.isVisible = isVisible
+  }
+
+  fun setAddingDeviceSectionVisibility(isVisible: Boolean, isSecureConnected: Boolean) {
+    this.isSecureConnected = isSecureConnected
+    binding.clAddingDevice.isVisible = isVisible
   }
 
   private fun initPresetValues() {
@@ -180,10 +227,10 @@ class UiSetupHelper(
     onFailureRequest(error)
   }
 
-  fun onFailureRequest(error: Exception) {
-    val message = "Request failed"
-    Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
-    Timber.e(error, error.message ?: message)
+  override fun onFailureRequest(error: Throwable) {
+    val message = "Error: ${error.message ?: error::class.java.simpleName}"
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    Timber.e(error, message)
   }
 
   @SuppressLint("SetTextI18n")

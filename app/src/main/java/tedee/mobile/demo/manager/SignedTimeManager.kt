@@ -2,7 +2,7 @@ package tedee.mobile.demo.manager
 
 import androidx.lifecycle.LifecycleCoroutineScope
 import kotlinx.coroutines.launch
-import tedee.mobile.demo.certificate.service.MobileService
+import tedee.mobile.demo.api.service.MobileService
 import tedee.mobile.sdk.ble.model.SignedTime
 
 class SignedTimeManager(private val lifecycleScope: LifecycleCoroutineScope) {

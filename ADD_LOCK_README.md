@@ -67,7 +67,7 @@ Serial number is required to make any connection to the lock. At this point we c
     }
   }
 ```
-> **Note:**  You can check the example implementation of MobileService in the [Example app](./src/main/java/tedee/mobile/ble/example/api/service)
+> **Note:**  You can check the example implementation of MobileService in the [example app](https://github.com/tedee-com/tedee-example-ble-android)
 
 Alternatively, you can use [Tedee API](https://api.tedee.com). Navigate to the Device section and use the `GET /api/v1.32/my/device/getserialnumber` route. Click the `Try it out` button, enter the `ActivationCode` value, and the response will return the Serial Number, which you can use in the next steps.
 
@@ -75,7 +75,7 @@ Alternatively, you can use [Tedee API](https://api.tedee.com). Navigate to the D
 ![getSerialNumberParameters](https://github.com/tedee-com/tedee-example-ble-android/assets/142867104/a4fa5bc8-e441-45cc-b5b1-16713e6ed6cd)
 
 > **Note:** Or use the example to get the serial number.
-> - Enter the activation code into the activation code edit text (or paste it into the `PRESENT_ACTIVATION_CODE` variable in the [Constants.kt](./src/main/java/tedee/mobile/ble/example/Constants.kt) class and run the app again).
+> - Enter the activation code into the activation code edit text (or paste it into the `PRESENT_ACTIVATION_CODE` variable in the [Constants.kt](https://github.com/tedee-com/tedee-example-ble-android/blob/master/app/src/main/java/tedee/mobile/demo/Constants.kt) class and run the app again).
 > - Click the `GET SERIAL NUMBER` button to fetch the serial number based on the activation code from the Tedee API. After a successful operation, the serial number edit text will be filled with the new value.
 >
 >```kotlin
@@ -100,7 +100,7 @@ Using the serial number, we can establish an unsecured connection to the lock.
 ### Step 3 - Get Necessary Data from the Lock
 Retrieve all necessary data from the lock, required to add it to your account.
 1. Set Signed date time
-   [setSignedTime](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt) function from IAddLockInteractor
+   [setSignedTime](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/) function from IAddLockInteractor
 ```kotlin
    suspend fun setSignedTime(signedTime: SignedTime): ByteArray?
 ```
@@ -137,7 +137,7 @@ Retrieve all necessary data from the lock, required to add it to your account.
 ```
 3. Get Lock data
    The `getLockData'` function is called to get the device settings (getUnsecureDeviceSettings), firmware version (getUnsecureFirmwareVersion), and signature (getSignature). This function returns a CreateDoorLockData object, which contains all the data needed to add the lock to your account.
-   [getAddLockData](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt)
+   [getAddLockData](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/)
 ```kotlin
   suspend fun getAddLockData(activationCode: String, serialNumber: String): CreateDoorLockData?
 ```
@@ -234,7 +234,7 @@ createDoorLockData.copy(name = "SDK")
 
 ### Step 5 - Register Lock
 Use NewDoorLockResponse from previous step to register the lock:
-[registerDevice](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt)
+[registerDevice](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/)
 ```kotlin
   suspend fun registerDevice(registerDeviceData: RegisterDeviceData)
 ```
@@ -278,8 +278,8 @@ The lock is now added to your account and registered. We can proceed to establis
   lockConnectionManager.connect(SERIAL_NUMBER, deviceCertificate, true, this)
 ```
 
-> **Note:**  You can check the example implementation of MobileService in the [Example app](./src/main/java/tedee/mobile/ble/example/api/service)
-> **Note:** If you encounter any problems, check out our [Example app](./src/main/java/tedee/mobile/ble/example/) or [contact us](https://github.com/tedee-com/tedee-mobile-sdk-android/discussions).
+> **Note:**  You can check the example implementation of MobileService in the [example app - mobile service](https://github.com/tedee-com/tedee-example-ble-android/blob/master/app/src/main/java/tedee/mobile/demo/api/service/MobileService.kt)
+> **Note:** If you encounter any problems, check out our [example app](https://github.com/tedee-com/tedee-example-ble-android/) or [contact us](https://github.com/tedee-com/tedee-mobile-sdk-android/discussions).
 
 ## Summary code
 ```kotlin

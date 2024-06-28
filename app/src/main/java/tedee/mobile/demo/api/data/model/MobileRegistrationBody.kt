@@ -1,4 +1,4 @@
-package tedee.mobile.demo.certificate.data.model
+package tedee.mobile.demo.api.data.model
 
 data class MobileRegistrationBody(
   var name: String,

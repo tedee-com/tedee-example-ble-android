@@ -1,10 +1,12 @@
-package tedee.mobile.demo.certificate.service
+package tedee.mobile.demo.api.service
 
 import com.google.gson.JsonElement
 import retrofit2.Response
-import tedee.mobile.demo.certificate.data.model.MobileCertificateResponse
-import tedee.mobile.demo.certificate.data.model.MobileRegistrationBody
-import tedee.mobile.demo.certificate.data.model.RegisterMobileResponse
+import tedee.mobile.demo.api.data.model.MobileCertificateResponse
+import tedee.mobile.demo.api.data.model.MobileRegistrationBody
+import tedee.mobile.demo.api.data.model.NewDoorLockResponse
+import tedee.mobile.demo.api.data.model.RegisterMobileResponse
+import tedee.mobile.sdk.ble.model.CreateDoorLockData
 import tedee.mobile.sdk.ble.model.SignedTime
 
 class MobileService {
@@ -24,6 +26,16 @@ class MobileService {
     return processResponse(response, SignedTime::class.java)
   }
 
+  suspend fun getSerialNumber(activationCode: String): String {
+    val response = ApiProvider.provideApi().getSerialNumber(activationCode)
+    return processPrimitiveResponse(response, "serialNumber")
+  }
+
+  suspend fun createNewDoorLock(data: CreateDoorLockData): NewDoorLockResponse {
+    val response = ApiProvider.provideApi().createNewDoorLock(data)
+    return processResponse(response, NewDoorLockResponse::class.java)
+  }
+
   private fun <T> processResponse(response: Response<JsonElement>, clazz: Class<T>): T {
     if (response.isSuccessful) {
       val result = response.body()?.asJsonObject?.get("result")
@@ -37,9 +49,26 @@ class MobileService {
     }
   }
 
+  private fun processPrimitiveResponse(
+    response: Response<JsonElement>,
+    memberName: String,
+  ): String {
+    if (response.isSuccessful) {
+      val result = response.body()?.asJsonObject?.get("result")
+      if (result?.isJsonObject == true) {
+        return result.asJsonObject.get(memberName).asString
+      } else {
+        throw Exception("Result is not a JsonObject")
+      }
+    } else {
+      throw Exception(parseError(response))
+    }
+  }
+
   private fun parseError(response: Response<JsonElement>): String {
     val errorWrapper =
-      response.errorBody()?.let { ApiProvider.provideGson().fromJson(it.charStream(), ErrorWrapper::class.java) }
+      response.errorBody()
+        ?.let { ApiProvider.provideGson().fromJson(it.charStream(), ErrorWrapper::class.java) }
     val responseError = errorWrapper?.errorMessages?.joinToString(separator = "|")
     return "${errorWrapper?.statusCode}: ${responseError ?: "Unknown error"}"
   }

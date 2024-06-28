@@ -1,4 +1,4 @@
-package tedee.mobile.demo.certificate.service
+package tedee.mobile.demo.api.service
 
 import com.google.gson.JsonElement
 import retrofit2.Response
@@ -6,7 +6,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
-import tedee.mobile.demo.certificate.data.model.MobileRegistrationBody
+import tedee.mobile.demo.api.data.model.MobileRegistrationBody
+import tedee.mobile.sdk.ble.model.CreateDoorLockData
 
 interface MobileApi {
   @POST("api/v1.32/my/mobile")
@@ -20,4 +21,10 @@ interface MobileApi {
 
   @GET("api/v1.32/datetime/getsignedtime")
   suspend fun getSignedTime(): Response<JsonElement>
+
+  @GET("api/v1.32/my/device/getserialnumber")
+  suspend fun getSerialNumber(@Query("ActivationCode") activationCode: String): Response<JsonElement>
+
+  @POST("/api/v1.32/my/Lock")
+  suspend fun createNewDoorLock(@Body newDoorLock: CreateDoorLockData): Response<JsonElement>
 }

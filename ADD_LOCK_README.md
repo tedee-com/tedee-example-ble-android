@@ -7,14 +7,14 @@ This tutorial will guide you through the basic steps required to add a lock to y
 
 ### Hardware
 1. Tedee Lock - you can order it in our [online store](https://tedee.com/shop/)
-    1. Lock must be factory reset. Here is how to do that:
+   1. Lock must be factory reset. Here is how to do that:
 
-       ![Factory Reset](https://github.com/tedee-com/tedee-example-ble-android/assets/142867104/88446a5c-b5d5-4eac-9730-7b8c7740c348)
-        1. Put the lock in a vertical position with the button facing up.
-        2. Press and hold the button until the red LED lights up.
-        3. Release the button. Three red flashes will confirm the process.
+      ![Factory Reset](https://github.com/tedee-com/tedee-example-ble-android/assets/142867104/88446a5c-b5d5-4eac-9730-7b8c7740c348)
+      1. Put the lock in a vertical position with the button facing up.
+      2. Press and hold the button until the red LED lights up.
+      3. Release the button. Three red flashes will confirm the process.
 
-    2. Your lock cannot be added to any account. If you added your lock before, you can delete it from account using Tedee app.
+   2. Your lock cannot be added to any account. If you added your lock before, you can delete it from account using Tedee app.
 2. Android device (not an emulator) with Android 8.0+ and the [Tedee app](https://play.google.com/store/apps/details?id=tedee.mobile) installed.
 3. A PC or Mac capable of running Android Studio.
 4. USB cable (to connect the phone to the PC).
@@ -28,20 +28,20 @@ This tutorial will guide you through the basic steps required to add a lock to y
 ## API Setup
 You can create a Personal Access Key (PAK) from portal.tedee.com and use it to authorize at api.tedee.com.
 1. Create Personal Access Key.
-    1. Log in to the [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account.
-    2. Click on your initials in top right corner.
+   1. Log in to the [Tedee Portal](https://portal.tedee.com) with credentials from created Tedee account.
+   2. Click on your initials in top right corner.
 
    ![img2](https://user-images.githubusercontent.com/81370389/209111859-9c022725-1593-4bfd-9d71-72b9e58d4397.png)
 
-    3. Click on Personal Access Keys and generate new access key with at least **Device certificates - Read** scope. Remember to save this key, as it will be needed for the next step.
+   3. Click on Personal Access Keys and generate new access key with at least **Device certificates - Read** scope. Remember to save this key, as it will be needed for the next step.
 2. Authorize Tedee API
-    1. Go to [Tedee API](https://api.tedee.com) and authorize yourself with created `Personal Access Key` in the previous step.
-    2. Click "Authorize" button.
+   1. Go to [Tedee API](https://api.tedee.com) and authorize yourself with created `Personal Access Key` in the previous step.
+   2. Click "Authorize" button.
 
    ![img9](https://user-images.githubusercontent.com/81370389/209112240-01764c21-16c8-4b42-86a6-5ee2374b81d7.png)
 
-    3. Proper format is `PersonalKey [YOUR PERSONAL ACCESS KEY]`.
-    4. Confirm with `Authorize`.
+   3. Proper format is `PersonalKey [YOUR PERSONAL ACCESS KEY]`.
+   4. Confirm with `Authorize`.
 
    > **Note:** You can also use one-time token by signing in after clicking "Azure B2C Login Page" on top of Swagger website. Paste returned token in the`Bearer [TOKEN]` format
 
@@ -52,11 +52,11 @@ Serial number is required to make any connection to the lock. At this point we c
 1. You can find the activation code on the device or on the last page of the instruction manual. An example of an activation code is: `201502XVfSdZze`.
 2. Prepare and send the request.
 ```kotlin
-  private val ACTIVATION_CODE = "201502XVfSdZze"
+  private var activationCode = "201502XVfSdZze"
   private val mobileService by lazy { MobileService() }
 
   lifecycleScope.launch {
-    val serialNumber = getSerialNumber(PRESET_ACTIVATION_CODE)
+    val serialNumber = getSerialNumber(activationCode)
   }
 
   suspend fun getSerialNumber(activationCode: String): String {
@@ -67,7 +67,7 @@ Serial number is required to make any connection to the lock. At this point we c
     }
   }
 ```
-> **Note:**  You can check the example implementation of MobileService in the [example app](https://github.com/tedee-com/tedee-example-ble-android)
+> **Note:**  You can check the example implementation of MobileService in the [Example app](./src/main/java/tedee/mobile/ble/example/api/service)
 
 Alternatively, you can use [Tedee API](https://api.tedee.com). Navigate to the Device section and use the `GET /api/v1.32/my/device/getserialnumber` route. Click the `Try it out` button, enter the `ActivationCode` value, and the response will return the Serial Number, which you can use in the next steps.
 
@@ -75,7 +75,7 @@ Alternatively, you can use [Tedee API](https://api.tedee.com). Navigate to the D
 ![getSerialNumberParameters](https://github.com/tedee-com/tedee-example-ble-android/assets/142867104/a4fa5bc8-e441-45cc-b5b1-16713e6ed6cd)
 
 > **Note:** Or use the example to get the serial number.
-> - Enter the activation code into the activation code edit text (or paste it into the `PRESENT_ACTIVATION_CODE` variable in the [Constants.kt](https://github.com/tedee-com/tedee-example-ble-android/blob/master/app/src/main/java/tedee/mobile/demo/Constants.kt) class and run the app again).
+> - Enter the activation code into the activation code edit text (or paste it into the `PRESENT_ACTIVATION_CODE` variable in the [Constants.kt](./src/main/java/tedee/mobile/ble/example/Constants.kt) class and run the app again).
 > - Click the `GET SERIAL NUMBER` button to fetch the serial number based on the activation code from the Tedee API. After a successful operation, the serial number edit text will be filled with the new value.
 >
 >```kotlin
@@ -100,7 +100,7 @@ Using the serial number, we can establish an unsecured connection to the lock.
 ### Step 3 - Get Necessary Data from the Lock
 Retrieve all necessary data from the lock, required to add it to your account.
 1. Set Signed date time
-   [setSignedTime](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/) function from IAddLockInteractor
+   [setSignedTime](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt) function from IAddLockInteractor
 ```kotlin
    suspend fun setSignedTime(signedTime: SignedTime): ByteArray?
 ```
@@ -137,19 +137,19 @@ Retrieve all necessary data from the lock, required to add it to your account.
 ```
 3. Get Lock data
    The `getLockData'` function is called to get the device settings (getUnsecureDeviceSettings), firmware version (getUnsecureFirmwareVersion), and signature (getSignature). This function returns a CreateDoorLockData object, which contains all the data needed to add the lock to your account.
-   [getAddLockData](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/)
+   [getAddLockData](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt)
 ```kotlin
   suspend fun getAddLockData(activationCode: String, serialNumber: String): CreateDoorLockData?
 ```
 ```kotlin
-  private val ACTIVATION_CODE = "201502XVfSdZze"
-  private val SERIAL_NUMBER = "12345678-901234"
+  private var activationCode = "201502XVfSdZze"
+  private var serialNumber = "12345678-901234"
   private val addLockConnectionManager by lazy { AddLockConnectionManager(this) }
 
   lifecycleScope.launch {
     try {
       val createDoorLockData =
-        addLockConnectionManager.getAddLockData(ACTIVATION_CODE, SERIAL_NUMBER)
+        addLockConnectionManager.getAddLockData(activationCode, serialNumber)
       Timber.d("Create Door Lock: $createDoorLockData")
     } catch (e: Exception) {
       Timber.e(e, "GetAddLockData: exception = $e")
@@ -203,15 +203,15 @@ createDoorLockData.copy(name = "SDK")
 ```
 2. Prepare and send the request:
 ```kotlin
-  private val ACTIVATION_CODE = "201502XVfSdZze"
-  private val SERIAL_NUMBER = "12345678-901234"
+  private var activationCode = "201502XVfSdZze"
+  private var serialNumber = "12345678-901234"
   private val addLockConnectionManager by lazy { AddLockConnectionManager(this) }
   private val mobileService by lazy { MobileService() }
 
   lifecycleScope.launch {
     try {
       val createDoorLockData =
-        addLockConnectionManager.getAddLockData(ACTIVATION_CODE, SERIAL_NUMBER)
+        addLockConnectionManager.getAddLockData(activationCode, serialNumber)
       val updatedDoorLockData = updateCreateDoorLockData(createDoorLockData)
       val newDoorLockResponse = createNewDoorLock(updatedDoorLockData)
     } catch (e: Exception) {
@@ -234,7 +234,7 @@ createDoorLockData.copy(name = "SDK")
 
 ### Step 5 - Register Lock
 Use NewDoorLockResponse from previous step to register the lock:
-[registerDevice](https://tedee-com.github.io/tedee-mobile-sdk-android/mobileblesdk/tedee.mobile.sdk.ble.bluetooth/)
+[registerDevice](../mobileblesdk/src/main/java/tedee/mobile/sdk/ble/bluetooth/adding/IAddLockInteractor.kt)
 ```kotlin
   suspend fun registerDevice(registerDeviceData: RegisterDeviceData)
 ```
@@ -254,15 +254,15 @@ The lock is now added to your account and registered. We can proceed to establis
 2. Get Certificate for the lock:
    Using the `MobilePublicKey` and `DeviceId`, obtain the certificate for the lock. DeviceId you can get from `RegisterDeviceData` object: `registerDeviceData.id`
 ```kotlin
-    private val DEVICE_NAME = "SDK"
-    private val DEVICE_ID = 123456
+    private var deviceName = "Lock from SDK"
+    private val deviceId = 123456
     private val mobileService by lazy { MobileService() }
 
     lifecycleScope.launch {
       val mobilePublicKey = getMobilePublicKey().orEmpty()
       try {
         val registerMobileResult = mobileService.registerMobile(
-          MobileRegistrationBody(DEVICE_NAME, publicKey = mobilePublicKey)
+          MobileRegistrationBody(deviceName, publicKey = mobilePublicKey)
         )
         val certificateResult = mobileService.getCertificate(registerMobileResult.id, DEVICE_ID)
         val certificate = certificateResult.certificate
@@ -278,17 +278,18 @@ The lock is now added to your account and registered. We can proceed to establis
   lockConnectionManager.connect(SERIAL_NUMBER, deviceCertificate, true, this)
 ```
 
-> **Note:**  You can check the example implementation of MobileService in the [example app - mobile service](https://github.com/tedee-com/tedee-example-ble-android/blob/master/app/src/main/java/tedee/mobile/demo/api/service/MobileService.kt)
-> **Note:** If you encounter any problems, check out our [example app](https://github.com/tedee-com/tedee-example-ble-android/) or [contact us](https://github.com/tedee-com/tedee-mobile-sdk-android/discussions).
+> **Note:**  You can check the example implementation of MobileService in the [Example app](./src/main/java/tedee/mobile/ble/example/api/service)
+> **Note:** If you encounter any problems, check out our [Example app](./src/main/java/tedee/mobile/ble/example/) or [contact us](https://github.com/tedee-com/tedee-mobile-sdk-android/discussions).
 
 ## Summary code
 ```kotlin
-class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
+class RegisterLockExampleActivity : AppCompatActivity(), IAddLockConnectionListener {
+
   private lateinit var binding: ActivityRegisterLockExampleBinding
-  private var DEVICE_NAME = "SDK"
-  private var DEVICE_ID: Int = 123456
-  private var SERIAL_NUMBER = ""
-  private val ACTIVATION_CODE = "201502XVfSdZze"
+  private var deviceName = "Lock from SDK"
+  private var deviceId: Int = -1
+  private var serialNumber = ""
+  private var activationCode = PRESET_ACTIVATION_CODE
   private val mobileService by lazy { MobileService() }
   private val addLockConnectionManager by lazy { AddLockConnectionManager(this) }
 
@@ -296,11 +297,25 @@ class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
     super.onCreate(savedInstanceState)
     binding = ActivityRegisterLockExampleBinding.inflate(layoutInflater)
     setContentView(binding.root)
-    Timber.plant(Timber.DebugTree())
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
     lifecycleScope.launch {
-      SERIAL_NUMBER = getSerialNumber(PRESET_ACTIVATION_CODE)
-      addLockConnectionManager.connectForAdding(SERIAL_NUMBER, false, this@AddLockActivity)
+      try {
+        serialNumber = getSerialNumber(activationCode)
+        Toast.makeText(applicationContext, "Serial number: $serialNumber", Toast.LENGTH_SHORT)
+          .show()
+        addLockConnectionManager.connectForAdding(
+          serialNumber,
+          false,
+          this@RegisterLockExampleActivity
+        )
+      } catch (e: Exception) {
+        showErrorToast(e)
+      }
+    }
+    binding.buttonNavigateToMain.setOnClickListener {
+      val intent = Intent(this@RegisterLockExampleActivity, MainActivity::class.java)
+      startActivity(intent)
+      finish()
     }
   }
 
@@ -310,7 +325,7 @@ class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
         val signedTime = getSignedTime()
         addLockConnectionManager.setSignedTime(signedTime)
       } catch (e: Exception) {
-        Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
+        showErrorToast(e)
         return@launch
       }
     }
@@ -320,15 +335,20 @@ class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
     lifecycleScope.launch {
       try {
         val createDoorLockData =
-          addLockConnectionManager.getAddLockData(ACTIVATION_CODE, SERIAL_NUMBER)
+          addLockConnectionManager.getAddLockData(activationCode, serialNumber)
         val updatedDoorLockData = updateCreateDoorLockData(createDoorLockData)
         val newDoorLockResponse = createNewDoorLock(updatedDoorLockData)
         val registerDeviceData =
           RegisterDeviceData(newDoorLockResponse.id, newDoorLockResponse.authPublicKey)
-        DEVICE_ID = registerDeviceData.id
+        deviceId = registerDeviceData.id
         addLockConnectionManager.registerDevice(registerDeviceData)
+        Toast.makeText(
+          applicationContext,
+          "Lock was added: DEVICE_ID: $deviceId, DEVICE_NAME: $deviceName",
+          Toast.LENGTH_SHORT
+        ).show()
       } catch (e: Exception) {
-        Toast.makeText(applicationContext, e.message, Toast.LENGTH_SHORT).show()
+        showErrorToast(e)
         return@launch
       }
     }
@@ -351,7 +371,7 @@ class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
   }
 
   private fun updateCreateDoorLockData(createDoorLockData: CreateDoorLockData): CreateDoorLockData {
-    return createDoorLockData.copy(name = DEVICE_NAME)
+    return createDoorLockData.copy(name = deviceName)
   }
 
   private suspend fun createNewDoorLock(createDoorLockResponse: CreateDoorLockData): NewDoorLockResponse {
@@ -377,15 +397,26 @@ class AddLockActivity : AppCompatActivity(), IAddLockConnectionListener {
   override fun onNotification(message: ByteArray) {
     if (message.isEmpty()) return
     Timber.d("LOCK LISTENER: notification: ${message.print()}")
-    if (message.first() == BluetoothConstants.NOTIFICATION_SIGNED_DATETIME) {
-      if (message.component2() == BluetoothConstants.API_RESULT_SUCCESS) {
-        registerLock()
-      }
+    if (message.first() == NOTIFICATION_SIGNED_DATETIME && message.component2() == API_RESULT_SUCCESS) {
+      registerLock()
     }
   }
 
   override fun onError(throwable: Throwable) {
     Timber.e(throwable, "LOCK LISTENER:: error $throwable")
+  }
+
+  private fun showErrorToast(exception: Exception) {
+    Toast.makeText(
+      applicationContext,
+      "${exception::class.java.simpleName} ${exception.message ?: ""}",
+      Toast.LENGTH_SHORT
+    ).show()
+  }
+
+  override fun onDestroy() {
+    addLockConnectionManager.clear()
+    super.onDestroy()
   }
 }
 ```

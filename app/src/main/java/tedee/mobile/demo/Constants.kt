@@ -1,5 +1,6 @@
 package tedee.mobile.demo
 
+// TODO: fill this data
 const val PERSONAL_ACCESS_KEY: String = ""
 const val PRESET_ACTIVATION_CODE = ""
 const val PRESET_SERIAL_NUMBER = ""

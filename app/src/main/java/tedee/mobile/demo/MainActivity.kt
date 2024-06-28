@@ -45,7 +45,6 @@ class MainActivity : AppCompatActivity(),
         throw throwable
       }
     }
-    Timber.plant(Timber.DebugTree())
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
     lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(lifecycleScope, uiSetupHelper)
     uiSetupHelper.setup()

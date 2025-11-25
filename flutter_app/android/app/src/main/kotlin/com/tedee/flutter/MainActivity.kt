@@ -129,15 +129,26 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                         }
                     }
                 }
-                "getDeviceSettings" -> {
+                "getBattery" -> {
                     scope.launch {
                         try {
-                            // Pass false = lock is already connected (not being added)
-                            val response = lockConnectionManager.getDeviceSettings(false)
-                            val readable = response?.toString() ?: "No response"
-                            result.success(readable)
+                            // GET_BATTERY command (0x0C)
+                            val response = lockConnectionManager.sendCommand(0x0C.toByte(), null)
+
+                            if (response == null || response.size < 4) {
+                                result.error("GET_BATTERY_FAILED", "Invalid response", null)
+                                return@launch
+                            }
+
+                            // Response: [COMMAND_ECHO, RESULT, BATTERY_LEVEL, CHARGING_STATUS]
+                            val batteryLevel = response[2].toInt() and 0xFF
+                            val chargingStatus = response[3].toInt() and 0xFF
+                            val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
+
+                            val batteryInfo = "Battery: $batteryLevel% - $chargingText"
+                            result.success(batteryInfo)
                         } catch (e: Exception) {
-                            result.error("GET_SETTINGS_FAILED", e.message, null)
+                            result.error("GET_BATTERY_FAILED", e.message, null)
                         }
                     }
                 }

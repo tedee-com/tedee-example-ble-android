@@ -214,17 +214,29 @@ class UiSetupHelper(
     }
   }
 
-  fun setupGetDeviceSettingsClickListener(getDeviceSettings: suspend (Boolean) -> DeviceSettings?) {
-    binding.buttonGetDeviceSettings.setOnClickListener {
+  fun setupGetBatteryClickListener(sendCommand: suspend (Byte, ByteArray?) -> ByteArray?) {
+    binding.buttonGetBattery.setOnClickListener {
       lifecycleScope.launch {
         try {
-          val deviceSettings = getDeviceSettings(isSecureConnected)
-          Timber.d("Device settings: $deviceSettings")
-          Toast.makeText(context, "$deviceSettings", Toast.LENGTH_SHORT).show()
-        } catch (e: DeviceNeedsResetError) {
-          Timber.e(e, "Device settings: DeviceNeedsResetError = $e")
+          // GET_BATTERY command (0x0C)
+          val response = sendCommand(0x0C.toByte(), null)
+
+          if (response == null || response.size < 4) {
+            addMessage("❌ Invalid battery response")
+            return@launch
+          }
+
+          // Response: [COMMAND_ECHO, RESULT, BATTERY_LEVEL, CHARGING_STATUS]
+          val batteryLevel = response[2].toInt() and 0xFF
+          val chargingStatus = response[3].toInt() and 0xFF
+          val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
+
+          val batteryInfo = "🔋 Battery: $batteryLevel% - $chargingText"
+          addMessage(batteryInfo)
+          Timber.d("Battery info: $batteryLevel% charging=$chargingStatus")
         } catch (e: Exception) {
-          Timber.e(e, "Device settings: Other exception = $e")
+          addMessage("❌ Failed to get battery: ${e.message}")
+          Timber.e(e, "Error getting battery")
         }
       }
     }

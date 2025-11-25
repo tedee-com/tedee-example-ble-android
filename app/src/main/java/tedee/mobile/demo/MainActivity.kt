@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity(),
       }
     }
     uiSetupHelper.setupDownloadActivityLogsClickListener(lockConnectionManager::sendCommand)
-    uiSetupHelper.setupGetDeviceSettingsClickListener(lockConnectionManager::getDeviceSettings)
+    uiSetupHelper.setupGetBatteryClickListener(lockConnectionManager::sendCommand)
     uiSetupHelper.setupGetFirmwareVersionClickListener(lockConnectionManager::getFirmwareVersion)
     binding.buttonNavigateToAddDevice.setOnClickListener {
       val intent = Intent(this@MainActivity, RegisterLockExampleActivity::class.java)

@@ -139,15 +139,15 @@ class _LockControlScreenState extends State<LockControlScreen> {
     }
   }
 
-  Future<void> _getDeviceSettings() async {
+  Future<void> _getBattery() async {
     try {
-      final result = await _lockService.getDeviceSettings();
+      final result = await _lockService.getBattery();
       setState(() {
-        _messages.insert(0, '⚙️ Device Settings: $result');
+        _messages.insert(0, '🔋 $result');
       });
     } catch (e) {
       setState(() {
-        _messages.insert(0, '❌ Get settings failed: $e');
+        _messages.insert(0, '❌ Get battery failed: $e');
       });
     }
   }
@@ -464,10 +464,10 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: _isConnected
-                                        ? _getDeviceSettings
+                                        ? _getBattery
                                         : null,
-                                    icon: const Icon(Icons.settings),
-                                    label: const Text('Device Settings'),
+                                    icon: const Icon(Icons.battery_std),
+                                    label: const Text('Get Battery'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.purple,
                                       foregroundColor: Colors.white,

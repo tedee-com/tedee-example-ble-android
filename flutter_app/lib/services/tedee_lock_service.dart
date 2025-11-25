@@ -75,13 +75,13 @@ class TedeeLockService {
     }
   }
 
-  /// Get device settings (unsecure connection required)
-  Future<String> getDeviceSettings() async {
+  /// Get battery level and charging status using command 0x0C
+  Future<String> getBattery() async {
     try {
-      final String result = await _channel.invokeMethod('getDeviceSettings');
+      final String result = await _channel.invokeMethod('getBattery');
       return result;
     } on PlatformException catch (e) {
-      throw Exception('Failed to get device settings: ${e.message}');
+      throw Exception('Failed to get battery: ${e.message}');
     }
   }
 

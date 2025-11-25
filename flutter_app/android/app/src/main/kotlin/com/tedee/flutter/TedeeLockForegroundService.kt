@@ -113,24 +113,44 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     private fun startAutoConnect() {
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
+            var retryDelay = 5000L // Start with 5 seconds
+            val maxRetryDelay = 60000L // Max 60 seconds
+
             while (true) {
                 if (!isConnected && !isConnecting) {
                     try {
                         Timber.d("Auto-connecting to lock...")
                         updateNotification("Connecting to $lockName...", false)
                         connectToLock()
+
+                        // Reset retry delay on successful connection attempt
+                        retryDelay = 5000L
+                    } catch (e: ScanThrottleException) {
+                        // BLE scan throttle - use longer delay
+                        val throttleDelay = 60000L // Wait 60 seconds for throttle
+                        Timber.w("BLE scan throttled, waiting ${throttleDelay/1000}s before retry")
+                        updateNotification("⚠️ BLE throttled - waiting ${throttleDelay/1000}s", false)
+                        delay(throttleDelay)
                     } catch (e: Exception) {
-                        Timber.e(e, "Auto-connect failed, retrying in 10s")
-                        delay(10000) // Retry every 10 seconds
+                        Timber.e(e, "Auto-connect failed, retrying in ${retryDelay/1000}s")
+                        updateNotification("Connection failed - retry in ${retryDelay/1000}s", false)
+                        delay(retryDelay)
+
+                        // Exponential backoff (double delay, up to max)
+                        retryDelay = (retryDelay * 2).coerceAtMost(maxRetryDelay)
                     }
                 } else {
-                    delay(5000) // Check connection every 5 seconds
+                    // Check connection status every 5 seconds when connected/connecting
+                    delay(5000)
                 }
             }
         }
     }
 
     private suspend fun connectToLock() {
+        // CRITICAL: Set isConnecting BEFORE calling connect to prevent loop
+        isConnecting = true
+
         try {
             val cert = certificateManager.registerAndGenerateCertificate(
                 serialNumber = serialNumber!!,
@@ -147,9 +167,23 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to connect")
+            isConnecting = false  // Reset on failure
+
+            // Check for BLE scan throttle error
+            val errorMsg = e.message ?: e.toString()
+            if (errorMsg.contains("2147483646") ||
+                (errorMsg.contains("scan", ignoreCase = true) &&
+                 errorMsg.contains("throttle", ignoreCase = true))) {
+                Timber.w("BLE scan throttle detected - waiting longer before retry")
+                throw ScanThrottleException("BLE scan throttled by Android", e)
+            }
+
             throw e
         }
     }
+
+    // Custom exception for scan throttle
+    class ScanThrottleException(message: String, cause: Throwable?) : Exception(message, cause)
 
     private fun executeCommand(commandName: String, command: suspend () -> ByteArray?) {
         if (!isConnected) {
@@ -263,14 +297,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 updateNotification("Connecting to $lockName...", false)
             }
             else -> {
-                updateNotification("Disconnected - Reconnecting...", false)
-                // Auto-reconnect on disconnect
-                serviceScope.launch {
-                    delay(3000)
-                    if (!isConnected && !isConnecting) {
-                        connectToLock()
-                    }
-                }
+                updateNotification("Disconnected - Auto-reconnect active", false)
+                // Don't manually reconnect here - let the auto-connect loop handle it
+                // This prevents multiple concurrent connection attempts
             }
         }
     }
@@ -292,7 +321,20 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
     override fun onError(throwable: Throwable) {
         Timber.e(throwable, "Service: onError")
-        updateNotification("❌ Error: ${throwable.message}", false)
+
+        // Check for BLE scan throttle error
+        val errorMsg = throwable.message ?: throwable.toString()
+        if (errorMsg.contains("2147483646") ||
+            (errorMsg.contains("scan", ignoreCase = true) &&
+             errorMsg.contains("throttle", ignoreCase = true))) {
+            Timber.w("BLE scan throttle detected in onError")
+            updateNotification("⚠️ BLE scan throttled - slowing reconnect", false)
+            // Reset connection flags so auto-connect can retry with throttle handling
+            isConnecting = false
+            isConnected = false
+        } else {
+            updateNotification("❌ Error: ${throwable.message}", false)
+        }
     }
 
     override fun onDestroy() {

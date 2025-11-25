@@ -131,12 +131,15 @@ class UiSetupHelper(
             packageCount++
             val response = sendCommand(0x2D.toByte(), null)
 
-            if (response == null || response.isEmpty()) {
-              addMessage("❌ No response from lock")
+            if (response == null || response.size < 2) {
+              addMessage("❌ Invalid response from lock")
               return@launch
             }
 
-            resultCode = response[0]
+            // Response format: [COMMAND_ECHO, RESULT_CODE, DATA...]
+            // Byte 0: 0x2D (command echo)
+            // Byte 1: Result code
+            resultCode = response[1]
 
             when (resultCode) {
               0x00.toByte() -> {

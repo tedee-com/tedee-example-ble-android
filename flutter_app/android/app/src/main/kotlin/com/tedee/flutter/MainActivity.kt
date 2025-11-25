@@ -180,12 +180,15 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                                 packageCount++
                                 val response = lockConnectionManager.sendCommand(0x2D.toByte(), null)
 
-                                if (response == null || response.isEmpty()) {
-                                    result.error("GET_LOGS_FAILED", "No response from lock", null)
+                                if (response == null || response.size < 2) {
+                                    result.error("GET_LOGS_FAILED", "Invalid response from lock", null)
                                     return@launch
                                 }
 
-                                resultCode = response[0]
+                                // Response format: [COMMAND_ECHO, RESULT_CODE, DATA...]
+                                // Byte 0: 0x2D (command echo)
+                                // Byte 1: Result code
+                                resultCode = response[1]
 
                                 when (resultCode) {
                                     0x00.toByte() -> {

@@ -347,23 +347,32 @@ class _LockControlScreenState extends State<LockControlScreen> {
                               },
                               activeColor: Colors.green,
                             ),
-                            SwitchListTile(
-                              title: const Text('🚀 Auto-Actions (Proximity)'),
-                              subtitle: Text(
-                                _autoActionsEnabled
-                                    ? '🔓 Lock CLOSED → Auto OPEN\n🔃 Lock OPEN → Auto PULL SPRING'
-                                    : 'Enable automatic lock/unlock when nearby',
-                                style: const TextStyle(fontSize: 12),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0),
+                              child: SwitchListTile(
+                                title: const Text('🚀 Auto-Actions (Proximity)'),
+                                subtitle: Text(
+                                  _autoActionsEnabled
+                                      ? '🔓 Lock CLOSED → Auto OPEN\n🔃 Lock OPEN → Auto PULL SPRING${_isBackgroundServiceRunning ? '\n⚠️ Changing will restart service' : ''}'
+                                      : 'Enable automatic lock/unlock when nearby${_isBackgroundServiceRunning ? '\n⚠️ Changing will restart service' : '\n(Requires background service)'}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                value: _autoActionsEnabled,
+                                onChanged: (value) async {
+                                  setState(() {
+                                    _autoActionsEnabled = value;
+                                  });
+
+                                  // If background service is running, restart it with new config
+                                  if (_isBackgroundServiceRunning) {
+                                    await _stopBackgroundService();
+                                    // Small delay to ensure clean shutdown
+                                    await Future.delayed(const Duration(milliseconds: 500));
+                                    await _startBackgroundService();
+                                  }
+                                },
+                                activeColor: Colors.orange,
                               ),
-                              value: _autoActionsEnabled,
-                              onChanged: _isBackgroundServiceRunning
-                                  ? null
-                                  : (value) {
-                                      setState(() {
-                                        _autoActionsEnabled = value;
-                                      });
-                                    },
-                              activeColor: Colors.orange,
                             ),
                           ],
                         ),

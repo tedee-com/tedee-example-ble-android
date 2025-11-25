@@ -1,5 +1,6 @@
 package com.tedee.flutter
 
+import android.content.Intent
 import android.graphics.Color
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity

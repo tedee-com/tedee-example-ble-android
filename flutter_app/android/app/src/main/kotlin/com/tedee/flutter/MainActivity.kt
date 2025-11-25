@@ -276,17 +276,21 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     val serialNumber = call.argument<String>("serialNumber")
                     val deviceId = call.argument<String>("deviceId")
                     val name = call.argument<String>("name")
+                    val enableAutoActions = call.argument<Boolean>("enableAutoActions") ?: false
 
                     if (serialNumber == null || deviceId == null || name == null) {
                         result.error("INVALID_ARGS", "Missing required arguments", null)
                         return@setMethodCallHandler
                     }
 
+                    Timber.d("Starting background service with auto-actions: $enableAutoActions")
+
                     val serviceIntent = Intent(this, TedeeLockForegroundService::class.java).apply {
                         action = TedeeLockForegroundService.ACTION_START_SERVICE
                         putExtra(TedeeLockForegroundService.EXTRA_SERIAL_NUMBER, serialNumber)
                         putExtra(TedeeLockForegroundService.EXTRA_DEVICE_ID, deviceId)
                         putExtra(TedeeLockForegroundService.EXTRA_NAME, name)
+                        putExtra(TedeeLockForegroundService.EXTRA_ENABLE_AUTO_ACTIONS, enableAutoActions)
                     }
                     startForegroundService(serviceIntent)
                     result.success(null)

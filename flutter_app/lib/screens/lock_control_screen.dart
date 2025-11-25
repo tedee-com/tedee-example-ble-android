@@ -15,6 +15,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
   bool _isConnecting = false;
   bool _keepConnection = true;
   bool _isBackgroundServiceRunning = false;
+  bool _autoActionsEnabled = false;
   final List<String> _messages = [];
 
   // Editable fields with preset values from Constants.kt
@@ -202,10 +203,12 @@ class _LockControlScreenState extends State<LockControlScreen> {
         serialNumber: _serialNumberController.text,
         deviceId: _deviceIdController.text,
         name: _nameController.text,
+        enableAutoActions: _autoActionsEnabled,
       );
       setState(() {
         _isBackgroundServiceRunning = true;
-        _messages.insert(0, '🔄 Background service started - Auto-connect enabled');
+        final autoMsg = _autoActionsEnabled ? ' with AUTO-ACTIONS 🚀' : '';
+        _messages.insert(0, '🔄 Background service started$autoMsg');
       });
     } catch (e) {
       setState(() {
@@ -343,6 +346,24 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 }
                               },
                               activeColor: Colors.green,
+                            ),
+                            SwitchListTile(
+                              title: const Text('🚀 Auto-Actions (Proximity)'),
+                              subtitle: Text(
+                                _autoActionsEnabled
+                                    ? '🔓 Lock CLOSED → Auto OPEN\n🔃 Lock OPEN → Auto PULL SPRING'
+                                    : 'Enable automatic lock/unlock when nearby',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              value: _autoActionsEnabled,
+                              onChanged: _isBackgroundServiceRunning
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        _autoActionsEnabled = value;
+                                      });
+                                    },
+                              activeColor: Colors.orange,
                             ),
                           ],
                         ),

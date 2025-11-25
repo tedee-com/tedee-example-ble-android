@@ -130,16 +130,22 @@ class TedeeLockService {
 
   /// Start background service for auto-connect
   /// Maintains connection in background and shows persistent notification
+  ///
+  /// [enableAutoActions] - Enable automatic actions based on lock state:
+  ///   - Lock CLOSED → Auto OPEN
+  ///   - Lock OPEN → Auto PULL SPRING
   Future<void> startBackgroundService({
     required String serialNumber,
     required String deviceId,
     required String name,
+    bool enableAutoActions = false,
   }) async {
     try {
       await _channel.invokeMethod('startBackgroundService', {
         'serialNumber': serialNumber,
         'deviceId': deviceId,
         'name': name,
+        'enableAutoActions': enableAutoActions,
       });
     } on PlatformException catch (e) {
       throw Exception('Failed to start background service: ${e.message}');

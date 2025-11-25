@@ -16,6 +16,7 @@ import tedee.mobile.sdk.ble.bluetooth.error.DeviceNeedsResetError
 import tedee.mobile.sdk.ble.extentions.getReadableLockCommandResult
 import tedee.mobile.sdk.ble.extentions.getReadableLockNotification
 import tedee.mobile.sdk.ble.extentions.getReadableLockState
+import tedee.mobile.sdk.ble.extentions.getReadableLockStatusResult
 import tedee.mobile.sdk.ble.extentions.getReadableStatus
 import tedee.mobile.sdk.ble.extentions.print
 import com.tedee.flutter.api.service.MobileService
@@ -120,7 +121,8 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     scope.launch {
                         try {
                             val response = lockConnectionManager.getLockState()
-                            val readable = response?.getReadableLockCommandResult() ?: "No response"
+                            // Use getReadableLockStatusResult() for lock state (not getReadableLockCommandResult)
+                            val readable = response?.getReadableLockStatusResult() ?: "No response"
                             result.success(readable)
                         } catch (e: Exception) {
                             result.error("GET_STATE_FAILED", e.message, null)

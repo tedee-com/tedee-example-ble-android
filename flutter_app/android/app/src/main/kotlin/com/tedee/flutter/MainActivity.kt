@@ -87,7 +87,7 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                 "openLock" -> {
                     // If background service is running, delegate to it instead of using our connection
                     if (isBackgroundServiceRunning()) {
-                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_OPEN)
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_OPEN_LOCK)
                         result.success(message)
                     } else {
                         scope.launch {
@@ -105,7 +105,7 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                 "closeLock" -> {
                     // If background service is running, delegate to it instead of using our connection
                     if (isBackgroundServiceRunning()) {
-                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_CLOSE)
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_CLOSE_LOCK)
                         result.success(message)
                     } else {
                         scope.launch {

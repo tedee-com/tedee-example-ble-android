@@ -14,6 +14,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
   bool _isConnected = false;
   bool _isConnecting = false;
   bool _keepConnection = true;
+  bool _isBackgroundServiceRunning = false;
   final List<String> _messages = [];
 
   // Editable fields with preset values from Constants.kt
@@ -195,6 +196,38 @@ class _LockControlScreenState extends State<LockControlScreen> {
     }
   }
 
+  Future<void> _startBackgroundService() async {
+    try {
+      await _lockService.startBackgroundService(
+        serialNumber: _serialNumberController.text,
+        deviceId: _deviceIdController.text,
+        name: _nameController.text,
+      );
+      setState(() {
+        _isBackgroundServiceRunning = true;
+        _messages.insert(0, '🔄 Background service started - Auto-connect enabled');
+      });
+    } catch (e) {
+      setState(() {
+        _messages.insert(0, '❌ Failed to start background service: $e');
+      });
+    }
+  }
+
+  Future<void> _stopBackgroundService() async {
+    try {
+      await _lockService.stopBackgroundService();
+      setState(() {
+        _isBackgroundServiceRunning = false;
+        _messages.insert(0, '⏹️ Background service stopped');
+      });
+    } catch (e) {
+      setState(() {
+        _messages.insert(0, '❌ Failed to stop background service: $e');
+      });
+    }
+  }
+
   Future<void> _sendCustomCommand() async {
     final command = _customCommandController.text.trim();
     if (command.isEmpty) {
@@ -292,6 +325,24 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                       });
                                     },
                               activeColor: const Color(0xFF22345a),
+                            ),
+                            const Divider(),
+                            SwitchListTile(
+                              title: const Text('Background Auto-Connect'),
+                              subtitle: Text(
+                                _isBackgroundServiceRunning
+                                    ? '🔄 Service running - Auto-connects when nearby'
+                                    : 'Start background service for auto-connect',
+                              ),
+                              value: _isBackgroundServiceRunning,
+                              onChanged: (value) async {
+                                if (value) {
+                                  await _startBackgroundService();
+                                } else {
+                                  await _stopBackgroundService();
+                                }
+                              },
+                              activeColor: Colors.green,
                             ),
                           ],
                         ),

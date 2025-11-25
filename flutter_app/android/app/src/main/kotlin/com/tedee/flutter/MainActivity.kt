@@ -271,6 +271,32 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                         }
                     }
                 }
+                "startBackgroundService" -> {
+                    val serialNumber = call.argument<String>("serialNumber")
+                    val deviceId = call.argument<String>("deviceId")
+                    val name = call.argument<String>("name")
+
+                    if (serialNumber == null || deviceId == null || name == null) {
+                        result.error("INVALID_ARGS", "Missing required arguments", null)
+                        return@setMethodCallHandler
+                    }
+
+                    val serviceIntent = Intent(this, TedeeLockForegroundService::class.java).apply {
+                        action = TedeeLockForegroundService.ACTION_START_SERVICE
+                        putExtra(TedeeLockForegroundService.EXTRA_SERIAL_NUMBER, serialNumber)
+                        putExtra(TedeeLockForegroundService.EXTRA_DEVICE_ID, deviceId)
+                        putExtra(TedeeLockForegroundService.EXTRA_NAME, name)
+                    }
+                    startForegroundService(serviceIntent)
+                    result.success(null)
+                }
+                "stopBackgroundService" -> {
+                    val serviceIntent = Intent(this, TedeeLockForegroundService::class.java).apply {
+                        action = TedeeLockForegroundService.ACTION_STOP_SERVICE
+                    }
+                    startService(serviceIntent)
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

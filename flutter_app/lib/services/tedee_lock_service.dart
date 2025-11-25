@@ -128,6 +128,33 @@ class TedeeLockService {
     }
   }
 
+  /// Start background service for auto-connect
+  /// Maintains connection in background and shows persistent notification
+  Future<void> startBackgroundService({
+    required String serialNumber,
+    required String deviceId,
+    required String name,
+  }) async {
+    try {
+      await _channel.invokeMethod('startBackgroundService', {
+        'serialNumber': serialNumber,
+        'deviceId': deviceId,
+        'name': name,
+      });
+    } on PlatformException catch (e) {
+      throw Exception('Failed to start background service: ${e.message}');
+    }
+  }
+
+  /// Stop background service
+  Future<void> stopBackgroundService() async {
+    try {
+      await _channel.invokeMethod('stopBackgroundService');
+    } on PlatformException catch (e) {
+      throw Exception('Failed to stop background service: ${e.message}');
+    }
+  }
+
   /// Set up listener for lock notifications from native side
   void setNotificationListener(Function(String) onNotification) {
     _channel.setMethodCallHandler((call) async {

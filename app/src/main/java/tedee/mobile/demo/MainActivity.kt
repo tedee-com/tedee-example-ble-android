@@ -151,30 +151,46 @@ class MainActivity : AppCompatActivity(),
     val hexBytes = message.joinToString(" ") { byte -> "0x%02X".format(byte) }
     Timber.d("LOCK LISTENER: notification bytes: $hexBytes")
 
-    val readableNotification = message.getReadableLockNotification()
+    // Check for HAS_ACTIVITY_LOGS notification (0xA5)
+    val firstByte = message.first()
+    val formattedText = when {
+      firstByte == 0xA5.toByte() -> {
+        """
+        📋 HAS_ACTIVITY_LOGS (0xA5)
 
-    // Add detailed info for unknown notifications
-    val formattedText = if (readableNotification.contains("unknown", ignoreCase = true)) {
-      val firstByte = message.first()
-      val firstByteHex = "0x%02X".format(firstByte.toInt() and 0xFF)
-      val secondByteInfo = if (message.size > 1) {
-        val secondByte = message[1]
-        val secondByteHex = "0x%02X".format(secondByte.toInt() and 0xFF)
-        "$secondByte ($secondByteHex)"
-      } else {
-        "N/A"
+        Activity logs are ready to be collected from the lock.
+        You can download them using the GET_LOGS_TLV command (0x2D).
+
+        - Triggered after connection
+        - Indicates logs waiting to download
+        """.trimIndent()
       }
-      """
-      onNotification: $readableNotification
+      else -> {
+        val readableNotification = message.getReadableLockNotification()
 
-      DEBUG INFO:
-      - First byte (command): $firstByte ($firstByteHex)
-      - Second byte (status): $secondByteInfo
-      - Total bytes: ${message.size}
-      - Full hex: $hexBytes
-      """.trimIndent()
-    } else {
-      "onNotification: \n$readableNotification"
+        // Add detailed info for unknown notifications
+        if (readableNotification.contains("unknown", ignoreCase = true)) {
+          val firstByteHex = "0x%02X".format(firstByte.toInt() and 0xFF)
+          val secondByteInfo = if (message.size > 1) {
+            val secondByte = message[1]
+            val secondByteHex = "0x%02X".format(secondByte.toInt() and 0xFF)
+            "$secondByte ($secondByteHex)"
+          } else {
+            "N/A"
+          }
+          """
+          onNotification: $readableNotification
+
+          DEBUG INFO:
+          - First byte (command): $firstByte ($firstByteHex)
+          - Second byte (status): $secondByteInfo
+          - Total bytes: ${message.size}
+          - Full hex: $hexBytes
+          """.trimIndent()
+        } else {
+          "onNotification: \n$readableNotification"
+        }
+      }
     }
 
     uiSetupHelper.addMessage(formattedText)

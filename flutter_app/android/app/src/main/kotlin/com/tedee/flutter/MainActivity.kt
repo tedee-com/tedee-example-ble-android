@@ -215,8 +215,19 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         if (message.isEmpty()) return
         Timber.d("Flutter: onNotification: ${message.print()}")
 
-        val readableNotification = message.getReadableLockNotification()
-        sendNotificationToFlutter("Notification: $readableNotification")
+        // Check for HAS_ACTIVITY_LOGS notification (0xA5)
+        val firstByte = message.first()
+        val notification = when {
+            firstByte == 0xA5.toByte() -> {
+                "📋 Activity logs available! Lock has stored activity logs ready to download."
+            }
+            else -> {
+                val readableNotification = message.getReadableLockNotification()
+                "Notification: $readableNotification"
+            }
+        }
+
+        sendNotificationToFlutter(notification)
     }
 
     override fun onLockStatusChanged(currentState: Byte, status: Byte) {

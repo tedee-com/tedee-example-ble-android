@@ -331,6 +331,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                   label: const Text('Connect'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
                                       vertical: 12,
@@ -344,6 +345,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                   label: const Text('Disconnect'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 24,
                                       vertical: 12,
@@ -383,6 +385,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Open'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -395,6 +398,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Close'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -413,6 +417,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Pull Spring'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.orange,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -425,6 +430,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Get State'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -464,6 +470,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Device Settings'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.purple,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -478,6 +485,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                     label: const Text('Firmware'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.teal,
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.all(16),
                                     ),
                                   ),
@@ -493,6 +501,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 label: const Text('Get Signed Time'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.indigo,
+                                      foregroundColor: Colors.white,
                                   padding: const EdgeInsets.all(16),
                                 ),
                               ),
@@ -506,6 +515,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 label: const Text('Download Activity Logs'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
+                                      foregroundColor: Colors.white,
                                   padding: const EdgeInsets.all(16),
                                 ),
                               ),
@@ -556,6 +566,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                   label: const Text('Send'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.deepOrange,
+                                      foregroundColor: Colors.white,
                                     padding: const EdgeInsets.all(16),
                                   ),
                                 ),

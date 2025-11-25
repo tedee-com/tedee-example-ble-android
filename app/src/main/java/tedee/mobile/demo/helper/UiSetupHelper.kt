@@ -136,10 +136,22 @@ class UiSetupHelper(
               return@launch
             }
 
+            // Debug: Log the full response
+            val hexBytes = response.joinToString(" ") { byte ->
+              "0x%02X".format(byte.toInt() and 0xFF)
+            }
+            Timber.d("GET_LOGS response: $hexBytes (size=${response.size})")
+
             // Response format: [COMMAND_ECHO, RESULT_CODE, DATA...]
             // Byte 0: 0x2D (command echo)
             // Byte 1: Result code
+            val commandEcho = response[0]
             resultCode = response[1]
+
+            Timber.d("Command echo: 0x%02X, Result code: 0x%02X".format(
+              commandEcho.toInt() and 0xFF,
+              resultCode.toInt() and 0xFF
+            ))
 
             when (resultCode) {
               0x00.toByte() -> {
@@ -172,7 +184,8 @@ class UiSetupHelper(
                 return@launch
               }
               else -> {
-                addMessage("❌ Unknown result code: ${resultCode.toString(16)}")
+                val codeHex = "0x%02X".format(resultCode.toInt() and 0xFF)
+                addMessage("❌ Unknown result code: $codeHex\nFull response: $hexBytes")
                 return@launch
               }
             }

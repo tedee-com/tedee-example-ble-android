@@ -58,6 +58,7 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var reconnectJob: Job? = null
+    private var statePollingJob: Job? = null
 
     private var serialNumber: String? = null
     private var deviceId: String? = null
@@ -166,6 +167,64 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 }
             }
         }
+    }
+
+    /**
+     * Start periodic polling of lock state
+     * Cylinders don't send automatic state notifications, so we poll manually
+     */
+    private fun startStatePolling() {
+        statePollingJob?.cancel()
+        statePollingJob = serviceScope.launch {
+            while (isConnected) {
+                try {
+                    delay(5000) // Poll every 5 seconds
+
+                    if (isConnected) {
+                        Timber.d("🔍 Polling lock state...")
+                        val response = lockConnectionManager.getLockState()
+
+                        if (response != null && response.size >= 2) {
+                            val state = response[1]
+                            val stateHex = "0x%02X".format(state.toInt() and 0xFF)
+                            Timber.i("📊 Polled state: ${state.getReadableLockState()} ($stateHex)")
+
+                            // Manually trigger onLockStatusChanged logic
+                            handleLockStateUpdate(state)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "State polling failed")
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle lock state update (called from both callback and polling)
+     */
+    private fun handleLockStateUpdate(state: Byte) {
+        currentLockStateByte = state
+        currentLockState = state.getReadableLockState()
+        val stateHex = "0x%02X".format(state.toInt() and 0xFF)
+
+        Timber.i("🔔 State updated: $currentLockState ($stateHex)")
+
+        // Check if we should perform auto-action
+        Timber.d("Auto-actions check: enabled=$autoActionsEnabled, connected=$isConnected")
+        if (autoActionsEnabled && isConnected) {
+            Timber.i("🎯 Checking auto-action for state: $currentLockState ($stateHex)")
+            performAutoActionIfNeeded(state)
+        } else {
+            if (!autoActionsEnabled) {
+                Timber.d("Auto-actions disabled, skipping")
+            }
+            if (!isConnected) {
+                Timber.d("Not connected, skipping auto-actions")
+            }
+        }
+
+        updateNotification("✅ Connected - $currentLockState", true)
     }
 
     private suspend fun connectToLock() {
@@ -316,6 +375,10 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 updateNotification("✅ Connected$autoMsg - $currentLockState", true)
                 // Reset processed state on new connection so auto-actions can trigger
                 lastProcessedState = null
+
+                // Start polling lock state (cylinders don't send automatic notifications)
+                Timber.i("🔄 Starting state polling for cylinder...")
+                startStatePolling()
             }
             isConnecting -> {
                 updateNotification("Connecting to $lockName...", false)
@@ -326,6 +389,10 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 // This prevents multiple concurrent connection attempts
                 // Reset processed state on disconnect
                 lastProcessedState = null
+
+                // Stop polling when disconnected
+                statePollingJob?.cancel()
+                statePollingJob = null
             }
         }
     }
@@ -340,26 +407,11 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     }
 
     override fun onLockStatusChanged(currentState: Byte, status: Byte) {
-        currentLockStateByte = currentState
-        currentLockState = currentState.getReadableLockState()
         val stateHex = "0x%02X".format(currentState.toInt() and 0xFF)
-        Timber.i("🔔 onLockStatusChanged - state=$currentLockState ($stateHex), status=$status")
+        Timber.i("🔔 onLockStatusChanged callback - state=${currentState.getReadableLockState()} ($stateHex), status=$status")
 
-        // Check if we should perform auto-action
-        Timber.d("Auto-actions check: enabled=$autoActionsEnabled, connected=$isConnected")
-        if (autoActionsEnabled && isConnected) {
-            Timber.i("🎯 Checking auto-action for state: $currentLockState ($stateHex)")
-            performAutoActionIfNeeded(currentState)
-        } else {
-            if (!autoActionsEnabled) {
-                Timber.d("Auto-actions disabled, skipping")
-            }
-            if (!isConnected) {
-                Timber.d("Not connected, skipping auto-actions")
-            }
-        }
-
-        updateNotification("✅ Connected - $currentLockState", true)
+        // Use centralized state update handler
+        handleLockStateUpdate(currentState)
     }
 
     private fun performAutoActionIfNeeded(lockState: Byte) {
@@ -451,6 +503,7 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     override fun onDestroy() {
         Timber.d("TedeeLockForegroundService: onDestroy()")
         reconnectJob?.cancel()
+        statePollingJob?.cancel()
         lockConnectionManager.disconnect()
         lockConnectionManager.clear()
         super.onDestroy()

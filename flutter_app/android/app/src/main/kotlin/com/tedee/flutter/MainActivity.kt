@@ -1,6 +1,8 @@
 package com.tedee.flutter
 
 import android.content.Intent
+import android.content.Context
+import android.app.ActivityManager
 import android.graphics.Color
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -83,38 +85,56 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     result.success(null)
                 }
                 "openLock" -> {
-                    scope.launch {
-                        try {
-                            // Explicitly provide null for params to avoid DefaultImpls lookup
-                            val response = lockConnectionManager.sendCommand(0x51.toByte(), null)
-                            val readable = response?.getReadableLockCommandResult() ?: "No response"
-                            result.success(readable)
-                        } catch (e: Exception) {
-                            result.error("OPEN_FAILED", e.message, null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_OPEN)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                // Explicitly provide null for params to avoid DefaultImpls lookup
+                                val response = lockConnectionManager.sendCommand(0x51.toByte(), null)
+                                val readable = response?.getReadableLockCommandResult() ?: "No response"
+                                result.success(readable)
+                            } catch (e: Exception) {
+                                result.error("OPEN_FAILED", e.message, null)
+                            }
                         }
                     }
                 }
                 "closeLock" -> {
-                    scope.launch {
-                        try {
-                            // Explicitly provide null for params to avoid DefaultImpls lookup
-                            val response = lockConnectionManager.sendCommand(0x50.toByte(), null)
-                            val readable = response?.getReadableLockCommandResult() ?: "No response"
-                            result.success(readable)
-                        } catch (e: Exception) {
-                            result.error("CLOSE_FAILED", e.message, null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_CLOSE)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                // Explicitly provide null for params to avoid DefaultImpls lookup
+                                val response = lockConnectionManager.sendCommand(0x50.toByte(), null)
+                                val readable = response?.getReadableLockCommandResult() ?: "No response"
+                                result.success(readable)
+                            } catch (e: Exception) {
+                                result.error("CLOSE_FAILED", e.message, null)
+                            }
                         }
                     }
                 }
                 "pullSpring" -> {
-                    scope.launch {
-                        try {
-                            // Explicitly provide null for params to avoid DefaultImpls lookup
-                            val response = lockConnectionManager.sendCommand(0x52.toByte(), null)
-                            val readable = response?.getReadableLockCommandResult() ?: "No response"
-                            result.success(readable)
-                        } catch (e: Exception) {
-                            result.error("PULL_FAILED", e.message, null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_PULL_SPRING)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                // Explicitly provide null for params to avoid DefaultImpls lookup
+                                val response = lockConnectionManager.sendCommand(0x52.toByte(), null)
+                                val readable = response?.getReadableLockCommandResult() ?: "No response"
+                                result.success(readable)
+                            } catch (e: Exception) {
+                                result.error("PULL_FAILED", e.message, null)
+                            }
                         }
                     }
                 }
@@ -387,6 +407,35 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         runOnUiThread {
             methodChannel?.invokeMethod("onNotification", message)
         }
+    }
+
+    /**
+     * Check if the background foreground service is currently running
+     */
+    private fun isBackgroundServiceRunning(): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        @Suppress("DEPRECATION") // getRunningServices still works for own app's services
+        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+            if (TedeeLockForegroundService::class.java.name == service.service.className) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Send command to background service via Intent
+     */
+    private fun sendCommandToBackgroundService(action: String): String {
+        if (!isBackgroundServiceRunning()) {
+            return "Background service not running"
+        }
+
+        val intent = Intent(this, TedeeLockForegroundService::class.java).apply {
+            this.action = action
+        }
+        startService(intent)
+        return "Command sent to background service"
     }
 
     override fun onDestroy() {

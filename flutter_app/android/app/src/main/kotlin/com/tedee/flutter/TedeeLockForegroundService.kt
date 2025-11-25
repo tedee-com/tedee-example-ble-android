@@ -101,7 +101,7 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                         "Starting service..."
                     }
                     startForeground(NOTIFICATION_ID, createNotification(statusMsg, false))
-                    Timber.d("Auto-actions enabled: $autoActionsEnabled")
+                    Timber.i("🚀 AUTO-ACTIONS enabled: $autoActionsEnabled")
                     startAutoConnect()
                 } else {
                     Timber.e("Missing lock credentials, stopping service")
@@ -342,31 +342,48 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     override fun onLockStatusChanged(currentState: Byte, status: Byte) {
         currentLockStateByte = currentState
         currentLockState = currentState.getReadableLockState()
-        Timber.d("Service: onLockStatusChanged - state=$currentLockState (0x${currentState.toString(16)}), status=$status")
+        val stateHex = "0x%02X".format(currentState.toInt() and 0xFF)
+        Timber.i("🔔 onLockStatusChanged - state=$currentLockState ($stateHex), status=$status")
 
         // Check if we should perform auto-action
+        Timber.d("Auto-actions check: enabled=$autoActionsEnabled, connected=$isConnected")
         if (autoActionsEnabled && isConnected) {
+            Timber.i("🎯 Checking auto-action for state: $currentLockState ($stateHex)")
             performAutoActionIfNeeded(currentState)
+        } else {
+            if (!autoActionsEnabled) {
+                Timber.d("Auto-actions disabled, skipping")
+            }
+            if (!isConnected) {
+                Timber.d("Not connected, skipping auto-actions")
+            }
         }
 
         updateNotification("✅ Connected - $currentLockState", true)
     }
 
     private fun performAutoActionIfNeeded(lockState: Byte) {
+        val stateHex = "0x%02X".format(lockState.toInt() and 0xFF)
+        Timber.i("🤖 performAutoActionIfNeeded called with state: $stateHex")
+
         // Check cooldown period
         val currentTime = System.currentTimeMillis()
         val timeSinceLastAction = currentTime - lastAutoActionTime
 
         if (timeSinceLastAction < AUTO_ACTION_COOLDOWN_MS) {
-            Timber.d("Auto-action cooldown active (${(AUTO_ACTION_COOLDOWN_MS - timeSinceLastAction) / 1000}s remaining)")
+            val remainingSeconds = (AUTO_ACTION_COOLDOWN_MS - timeSinceLastAction) / 1000
+            Timber.w("⏳ Auto-action cooldown active ($remainingSeconds s remaining)")
             return
         }
 
         // Check if this state was already processed
+        val lastStateHex = lastProcessedState?.let { "0x%02X".format(it.toInt() and 0xFF) } ?: "null"
         if (lastProcessedState == lockState) {
-            Timber.d("Lock state $lockState already processed, skipping auto-action")
+            Timber.w("♻️ Lock state $stateHex already processed (last=$lastStateHex), skipping")
             return
         }
+
+        Timber.i("✅ Auto-action checks passed, state=$stateHex (LOCKED=0x06, UNLOCKED=0x02)")
 
         // Perform auto-action based on lock state
         when (lockState) {
@@ -407,7 +424,8 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 }
             }
             else -> {
-                Timber.d("Lock state $lockState - no auto-action defined")
+                val stateHex = "0x%02X".format(lockState.toInt() and 0xFF)
+                Timber.i("❓ Lock state $stateHex (${lockState.getReadableLockState()}) - no auto-action defined")
             }
         }
     }

@@ -116,17 +116,127 @@ class UiSetupHelper(
     binding.buttonSetSignedTime.setOnClickListener { getAndSetSignedTime(setSignedTime) }
   }
 
-  fun setupGetDeviceSettingsClickListener(getDeviceSettings: suspend (Boolean) -> DeviceSettings?) {
-    binding.buttonGetDeviceSettings.setOnClickListener {
+  fun setupDownloadActivityLogsClickListener(sendCommand: suspend (Byte, ByteArray?) -> ByteArray?) {
+    binding.buttonDownloadActivityLogs.setOnClickListener {
       lifecycleScope.launch {
         try {
-          val deviceSettings = getDeviceSettings(isSecureConnected)
-          Timber.d("Device settings: $deviceSettings")
-          Toast.makeText(context, "$deviceSettings", Toast.LENGTH_SHORT).show()
-        } catch (e: DeviceNeedsResetError) {
-          Timber.e(e, "Device settings: DeviceNeedsResetError = $e")
+          val allLogs = mutableListOf<String>()
+          var packageCount = 0
+          var resultCode: Byte
+
+          addMessage("📋 Starting activity logs download...")
+
+          // Loop to download all log packages
+          do {
+            packageCount++
+            val response = sendCommand(0x2D.toByte(), null)
+
+            if (response == null || response.size < 2) {
+              addMessage("❌ Invalid response from lock")
+              return@launch
+            }
+
+            // Debug: Log the full response
+            val hexBytes = response.joinToString(" ") { byte ->
+              "0x%02X".format(byte.toInt() and 0xFF)
+            }
+            Timber.d("GET_LOGS response: $hexBytes (size=${response.size})")
+
+            // Response format: [COMMAND_ECHO, RESULT_CODE, DATA...]
+            // Byte 0: 0x2D (command echo)
+            // Byte 1: Result code
+            val commandEcho = response[0]
+            resultCode = response[1]
+
+            Timber.d("Command echo: 0x%02X, Result code: 0x%02X".format(
+              commandEcho.toInt() and 0xFF,
+              resultCode.toInt() and 0xFF
+            ))
+
+            when (resultCode) {
+              0x00.toByte() -> {
+                // SUCCESS - more logs available
+                val logData = response.print()
+                allLogs.add("Package $packageCount (MORE): $logData")
+                Timber.d("Activity logs package $packageCount: $logData")
+              }
+              0x04.toByte() -> {
+                // NOT_FOUND - last package or no logs
+                if (response.size > 1) {
+                  val logData = response.print()
+                  allLogs.add("Package $packageCount (LAST): $logData")
+                  Timber.d("Activity logs last package: $logData")
+                } else {
+                  allLogs.add("Package $packageCount: No more logs available")
+                }
+              }
+              0x03.toByte() -> {
+                // BUSY - wait and retry
+                allLogs.add("Package $packageCount: Lock busy, waiting 200ms...")
+                kotlinx.coroutines.delay(200)
+              }
+              0x02.toByte() -> {
+                addMessage("❌ MTU too small (minimum 98 bytes required)")
+                return@launch
+              }
+              0x07.toByte() -> {
+                addMessage("❌ No permission to read logs")
+                return@launch
+              }
+              else -> {
+                val codeHex = "0x%02X".format(resultCode.toInt() and 0xFF)
+                addMessage("❌ Unknown result code: $codeHex\nFull response: $hexBytes")
+                return@launch
+              }
+            }
+
+            // Safety limit to prevent infinite loops
+            if (packageCount >= 100) {
+              allLogs.add("⚠️ Stopped after 100 packages (safety limit)")
+              break
+            }
+
+          } while (resultCode != 0x04.toByte()) // Continue until NOT_FOUND
+
+          val summary = """
+            |📋 Activity Logs Downloaded
+            |
+            |Total packages: $packageCount
+            |${allLogs.joinToString("\n")}
+          """.trimMargin()
+
+          addMessage(summary)
         } catch (e: Exception) {
-          Timber.e(e, "Device settings: Other exception = $e")
+          addMessage("❌ Failed to download logs: ${e.message}")
+          Timber.e(e, "Error downloading activity logs")
+        }
+      }
+    }
+  }
+
+  fun setupGetBatteryClickListener(sendCommand: suspend (Byte, ByteArray?) -> ByteArray?) {
+    binding.buttonGetBattery.setOnClickListener {
+      lifecycleScope.launch {
+        try {
+          // GET_BATTERY command (0x0C)
+          val response = sendCommand(0x0C.toByte(), null)
+
+          if (response == null || response.size < 4) {
+            addMessage("❌ Invalid battery response")
+            return@launch
+          }
+
+          // Response: [COMMAND_ECHO, RESULT, BATTERY_LEVEL, CHARGING_STATUS]
+          val batteryLevel = response[2].toInt() and 0xFF
+          val chargingStatus = response[3].toInt() and 0xFF
+          val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
+
+          val batteryInfo = "🔋 Battery: $batteryLevel% - $chargingText"
+          addMessage(batteryInfo)
+          Timber.d("Battery info: $batteryLevel% charging=$chargingStatus")
+        } catch (e: Exception) {
+          addMessage("❌ Failed to get battery: ${e.message}")
+          Timber.e(e, "Error getting battery")
         }
       }
     }

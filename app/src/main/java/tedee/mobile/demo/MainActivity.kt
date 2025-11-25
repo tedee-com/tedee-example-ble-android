@@ -76,7 +76,9 @@ class MainActivity : AppCompatActivity(),
     uiSetupHelper.setupOpenLockClickListener {
       lifecycleScope.launch {
         try {
-          lockConnectionManager.openLock()
+          // Use direct BLE command 0x51 for cylinder unlock
+          val result = lockConnectionManager.sendCommand(0x51.toByte())
+          uiSetupHelper.addMessage("Open lock command sent: ${result?.print()}")
         } catch (e: Exception) {
           uiSetupHelper.onFailureRequest(e)
         }
@@ -85,7 +87,9 @@ class MainActivity : AppCompatActivity(),
     uiSetupHelper.setupCloseLockClickListener {
       lifecycleScope.launch {
         try {
-          lockConnectionManager.closeLock()
+          // Use direct BLE command 0x50 for cylinder lock
+          val result = lockConnectionManager.sendCommand(0x50.toByte())
+          uiSetupHelper.addMessage("Close lock command sent: ${result?.print()}")
         } catch (e: Exception) {
           uiSetupHelper.onFailureRequest(e)
         }
@@ -94,7 +98,9 @@ class MainActivity : AppCompatActivity(),
     uiSetupHelper.setupPullLockClickListener {
       lifecycleScope.launch {
         try {
-          lockConnectionManager.pullSpring()
+          // Use direct BLE command 0x52 for pull spring
+          val result = lockConnectionManager.sendCommand(0x52.toByte())
+          uiSetupHelper.addMessage("Pull spring command sent: ${result?.print()}")
         } catch (e: Exception) {
           uiSetupHelper.onFailureRequest(e)
         }
@@ -109,7 +115,8 @@ class MainActivity : AppCompatActivity(),
         }
       }
     }
-    uiSetupHelper.setupGetDeviceSettingsClickListener(lockConnectionManager::getDeviceSettings)
+    uiSetupHelper.setupDownloadActivityLogsClickListener(lockConnectionManager::sendCommand)
+    uiSetupHelper.setupGetBatteryClickListener(lockConnectionManager::sendCommand)
     uiSetupHelper.setupGetFirmwareVersionClickListener(lockConnectionManager::getFirmwareVersion)
     binding.buttonNavigateToAddDevice.setOnClickListener {
       val intent = Intent(this@MainActivity, RegisterLockExampleActivity::class.java)
@@ -140,8 +147,53 @@ class MainActivity : AppCompatActivity(),
   override fun onNotification(message: ByteArray) {
     if (message.isEmpty()) return
     Timber.d("LOCK LISTENER: notification: ${message.print()}")
-    val readableNotification = message.getReadableLockNotification()
-    val formattedText = "onNotification: \n$readableNotification"
+
+    // Detailed hex dump for debugging
+    val hexBytes = message.joinToString(" ") { byte -> "0x%02X".format(byte) }
+    Timber.d("LOCK LISTENER: notification bytes: $hexBytes")
+
+    // Check for HAS_ACTIVITY_LOGS notification (0xA5)
+    val firstByte = message.first()
+    val formattedText = when {
+      firstByte == 0xA5.toByte() -> {
+        """
+        📋 HAS_ACTIVITY_LOGS (0xA5)
+
+        Activity logs are ready to be collected from the lock.
+        You can download them using the GET_LOGS_TLV command (0x2D).
+
+        - Triggered after connection
+        - Indicates logs waiting to download
+        """.trimIndent()
+      }
+      else -> {
+        val readableNotification = message.getReadableLockNotification()
+
+        // Add detailed info for unknown notifications
+        if (readableNotification.contains("unknown", ignoreCase = true)) {
+          val firstByteHex = "0x%02X".format(firstByte.toInt() and 0xFF)
+          val secondByteInfo = if (message.size > 1) {
+            val secondByte = message[1]
+            val secondByteHex = "0x%02X".format(secondByte.toInt() and 0xFF)
+            "$secondByte ($secondByteHex)"
+          } else {
+            "N/A"
+          }
+          """
+          onNotification: $readableNotification
+
+          DEBUG INFO:
+          - First byte (command): $firstByte ($firstByteHex)
+          - Second byte (status): $secondByteInfo
+          - Total bytes: ${message.size}
+          - Full hex: $hexBytes
+          """.trimIndent()
+        } else {
+          "onNotification: \n$readableNotification"
+        }
+      }
+    }
+
     uiSetupHelper.addMessage(formattedText)
   }
 

@@ -42,6 +42,14 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
         const val EXTRA_SERIAL_NUMBER = "serial_number"
         const val EXTRA_DEVICE_ID = "device_id"
         const val EXTRA_NAME = "name"
+        const val EXTRA_ENABLE_AUTO_ACTIONS = "enable_auto_actions"
+
+        // Lock state constants (from Tedee SDK)
+        private const val LOCK_STATE_LOCKED: Byte = 0x06
+        private const val LOCK_STATE_UNLOCKED: Byte = 0x02
+
+        // Cooldown to prevent rapid-fire actions
+        private const val AUTO_ACTION_COOLDOWN_MS = 10000L // 10 seconds
     }
 
     private lateinit var lockConnectionManager: LockConnectionManager
@@ -57,6 +65,12 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     private var isConnected = false
     private var isConnecting = false
     private var currentLockState: String = "Unknown"
+    private var currentLockStateByte: Byte = 0x00
+
+    // Auto-action settings
+    private var autoActionsEnabled = false
+    private var lastAutoActionTime = 0L
+    private var lastProcessedState: Byte? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -78,9 +92,16 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 serialNumber = intent.getStringExtra(EXTRA_SERIAL_NUMBER)
                 deviceId = intent.getStringExtra(EXTRA_DEVICE_ID)
                 lockName = intent.getStringExtra(EXTRA_NAME)
+                autoActionsEnabled = intent.getBooleanExtra(EXTRA_ENABLE_AUTO_ACTIONS, false)
 
                 if (serialNumber != null && deviceId != null && lockName != null) {
-                    startForeground(NOTIFICATION_ID, createNotification("Starting service...", false))
+                    val statusMsg = if (autoActionsEnabled) {
+                        "Starting service (AUTO-ACTIONS ENABLED)..."
+                    } else {
+                        "Starting service..."
+                    }
+                    startForeground(NOTIFICATION_ID, createNotification(statusMsg, false))
+                    Timber.d("Auto-actions enabled: $autoActionsEnabled")
                     startAutoConnect()
                 } else {
                     Timber.e("Missing lock credentials, stopping service")
@@ -291,7 +312,10 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
         when {
             isConnected -> {
-                updateNotification("✅ Connected - $currentLockState", true)
+                val autoMsg = if (autoActionsEnabled) " (AUTO-ACTIONS ON)" else ""
+                updateNotification("✅ Connected$autoMsg - $currentLockState", true)
+                // Reset processed state on new connection so auto-actions can trigger
+                lastProcessedState = null
             }
             isConnecting -> {
                 updateNotification("Connecting to $lockName...", false)
@@ -300,6 +324,8 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 updateNotification("Disconnected - Auto-reconnect active", false)
                 // Don't manually reconnect here - let the auto-connect loop handle it
                 // This prevents multiple concurrent connection attempts
+                // Reset processed state on disconnect
+                lastProcessedState = null
             }
         }
     }
@@ -314,9 +340,76 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     }
 
     override fun onLockStatusChanged(currentState: Byte, status: Byte) {
+        currentLockStateByte = currentState
         currentLockState = currentState.getReadableLockState()
-        Timber.d("Service: onLockStatusChanged - state=$currentLockState")
+        Timber.d("Service: onLockStatusChanged - state=$currentLockState (0x${currentState.toString(16)}), status=$status")
+
+        // Check if we should perform auto-action
+        if (autoActionsEnabled && isConnected) {
+            performAutoActionIfNeeded(currentState)
+        }
+
         updateNotification("✅ Connected - $currentLockState", true)
+    }
+
+    private fun performAutoActionIfNeeded(lockState: Byte) {
+        // Check cooldown period
+        val currentTime = System.currentTimeMillis()
+        val timeSinceLastAction = currentTime - lastAutoActionTime
+
+        if (timeSinceLastAction < AUTO_ACTION_COOLDOWN_MS) {
+            Timber.d("Auto-action cooldown active (${(AUTO_ACTION_COOLDOWN_MS - timeSinceLastAction) / 1000}s remaining)")
+            return
+        }
+
+        // Check if this state was already processed
+        if (lastProcessedState == lockState) {
+            Timber.d("Lock state $lockState already processed, skipping auto-action")
+            return
+        }
+
+        // Perform auto-action based on lock state
+        when (lockState) {
+            LOCK_STATE_LOCKED -> {
+                // Lock is CLOSED → AUTO OPEN
+                Timber.i("🔓 AUTO-ACTION: Lock is CLOSED, opening automatically...")
+                updateNotification("🔓 AUTO: Opening lock...", true)
+
+                serviceScope.launch {
+                    try {
+                        val result = lockConnectionManager.sendCommand(0x51.toByte(), null)
+                        Timber.d("Auto-open result: ${result?.print()}")
+                        updateNotification("✅ AUTO: Lock opened", true)
+                        lastAutoActionTime = currentTime
+                        lastProcessedState = lockState
+                    } catch (e: Exception) {
+                        Timber.e(e, "Auto-open failed")
+                        updateNotification("❌ AUTO: Open failed - ${e.message}", true)
+                    }
+                }
+            }
+            LOCK_STATE_UNLOCKED -> {
+                // Lock is OPEN → AUTO PULL SPRING
+                Timber.i("🔃 AUTO-ACTION: Lock is OPEN, pulling spring automatically...")
+                updateNotification("🔃 AUTO: Pulling spring...", true)
+
+                serviceScope.launch {
+                    try {
+                        val result = lockConnectionManager.sendCommand(0x52.toByte(), null)
+                        Timber.d("Auto-pull spring result: ${result?.print()}")
+                        updateNotification("✅ AUTO: Spring pulled", true)
+                        lastAutoActionTime = currentTime
+                        lastProcessedState = lockState
+                    } catch (e: Exception) {
+                        Timber.e(e, "Auto-pull spring failed")
+                        updateNotification("❌ AUTO: Pull spring failed - ${e.message}", true)
+                    }
+                }
+            }
+            else -> {
+                Timber.d("Lock state $lockState - no auto-action defined")
+            }
+        }
     }
 
     override fun onError(throwable: Throwable) {

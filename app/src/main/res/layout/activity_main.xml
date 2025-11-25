@@ -323,6 +323,17 @@
         app:layout_constraintStart_toEndOf="@+id/buttonGetFirmwareVersion"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/buttonDownloadActivityLogs"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Download Activity Logs (0x2D)"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGetDeviceSettings" />
+
   </androidx.constraintlayout.widget.ConstraintLayout>
 
   <androidx.recyclerview.widget.RecyclerView

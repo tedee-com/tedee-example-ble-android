@@ -168,6 +168,82 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     // Temporarily disabled due to Kotlin/SDK incompatibility
                     result.error("NOT_IMPLEMENTED", "Custom command feature temporarily disabled", null)
                 }
+                "getActivityLogs" -> {
+                    scope.launch {
+                        try {
+                            val allLogs = mutableListOf<String>()
+                            var packageCount = 0
+                            var resultCode: Byte
+
+                            // Loop to download all log packages
+                            do {
+                                packageCount++
+                                val response = lockConnectionManager.sendCommand(0x2D.toByte(), null)
+
+                                if (response == null || response.isEmpty()) {
+                                    result.error("GET_LOGS_FAILED", "No response from lock", null)
+                                    return@launch
+                                }
+
+                                resultCode = response[0]
+
+                                when (resultCode) {
+                                    0x00.toByte() -> {
+                                        // SUCCESS - more logs available
+                                        val logData = response.print()
+                                        allLogs.add("Package $packageCount (MORE): $logData")
+                                        Timber.d("Activity logs package $packageCount: $logData")
+                                    }
+                                    0x04.toByte() -> {
+                                        // NOT_FOUND - last package or no logs
+                                        if (response.size > 1) {
+                                            val logData = response.print()
+                                            allLogs.add("Package $packageCount (LAST): $logData")
+                                            Timber.d("Activity logs last package: $logData")
+                                        } else {
+                                            allLogs.add("Package $packageCount: No more logs available")
+                                        }
+                                    }
+                                    0x03.toByte() -> {
+                                        // BUSY - wait and retry
+                                        allLogs.add("Package $packageCount: Lock busy, waiting 200ms...")
+                                        kotlinx.coroutines.delay(200)
+                                    }
+                                    0x02.toByte() -> {
+                                        result.error("GET_LOGS_FAILED", "MTU too small (minimum 98 bytes required)", null)
+                                        return@launch
+                                    }
+                                    0x07.toByte() -> {
+                                        result.error("GET_LOGS_FAILED", "No permission to read logs", null)
+                                        return@launch
+                                    }
+                                    else -> {
+                                        result.error("GET_LOGS_FAILED", "Unknown result code: ${resultCode.toString(16)}", null)
+                                        return@launch
+                                    }
+                                }
+
+                                // Safety limit to prevent infinite loops
+                                if (packageCount >= 100) {
+                                    allLogs.add("Warning: Stopped after 100 packages (safety limit)")
+                                    break
+                                }
+
+                            } while (resultCode != 0x04.toByte()) // Continue until NOT_FOUND
+
+                            val summary = """
+                                |📋 Activity Logs Downloaded
+                                |
+                                |Total packages: $packageCount
+                                |${allLogs.joinToString("\n")}
+                            """.trimMargin()
+
+                            result.success(summary)
+                        } catch (e: Exception) {
+                            result.error("GET_LOGS_FAILED", e.message, null)
+                        }
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

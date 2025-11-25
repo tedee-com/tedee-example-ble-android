@@ -117,6 +117,17 @@ class TedeeLockService {
     }
   }
 
+  /// Download activity logs from lock using GET_LOGS_TLV command (0x2D)
+  /// Automatically fetches all available log packages until none remain
+  Future<String> getActivityLogs() async {
+    try {
+      final String result = await _channel.invokeMethod('getActivityLogs');
+      return result;
+    } on PlatformException catch (e) {
+      throw Exception('Failed to get activity logs: ${e.message}');
+    }
+  }
+
   /// Set up listener for lock notifications from native side
   void setNotificationListener(Function(String) onNotification) {
     _channel.setMethodCallHandler((call) async {

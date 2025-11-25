@@ -115,6 +115,7 @@ class MainActivity : AppCompatActivity(),
         }
       }
     }
+    uiSetupHelper.setupDownloadActivityLogsClickListener(lockConnectionManager::sendCommand)
     uiSetupHelper.setupGetDeviceSettingsClickListener(lockConnectionManager::getDeviceSettings)
     uiSetupHelper.setupGetFirmwareVersionClickListener(lockConnectionManager::getFirmwareVersion)
     binding.buttonNavigateToAddDevice.setOnClickListener {

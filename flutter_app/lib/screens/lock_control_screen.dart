@@ -178,6 +178,23 @@ class _LockControlScreenState extends State<LockControlScreen> {
     }
   }
 
+  Future<void> _getActivityLogs() async {
+    setState(() {
+      _messages.insert(0, '📋 Downloading activity logs...');
+    });
+
+    try {
+      final result = await _lockService.getActivityLogs();
+      setState(() {
+        _messages.insert(0, result);
+      });
+    } catch (e) {
+      setState(() {
+        _messages.insert(0, '❌ Failed to download logs: $e');
+      });
+    }
+  }
+
   Future<void> _sendCustomCommand() async {
     final command = _customCommandController.text.trim();
     if (command.isEmpty) {
@@ -476,6 +493,19 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 label: const Text('Get Signed Time'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.indigo,
+                                  padding: const EdgeInsets.all(16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _getActivityLogs,
+                                icon: const Icon(Icons.history),
+                                label: const Text('Download Activity Logs'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.deepPurple,
                                   padding: const EdgeInsets.all(16),
                                 ),
                               ),

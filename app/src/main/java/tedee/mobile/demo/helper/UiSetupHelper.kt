@@ -116,6 +116,88 @@ class UiSetupHelper(
     binding.buttonSetSignedTime.setOnClickListener { getAndSetSignedTime(setSignedTime) }
   }
 
+  fun setupDownloadActivityLogsClickListener(sendCommand: suspend (Byte, ByteArray?) -> ByteArray?) {
+    binding.buttonDownloadActivityLogs.setOnClickListener {
+      lifecycleScope.launch {
+        try {
+          val allLogs = mutableListOf<String>()
+          var packageCount = 0
+          var resultCode: Byte
+
+          addMessage("📋 Starting activity logs download...")
+
+          // Loop to download all log packages
+          do {
+            packageCount++
+            val response = sendCommand(0x2D.toByte(), null)
+
+            if (response == null || response.isEmpty()) {
+              addMessage("❌ No response from lock")
+              return@launch
+            }
+
+            resultCode = response[0]
+
+            when (resultCode) {
+              0x00.toByte() -> {
+                // SUCCESS - more logs available
+                val logData = response.print()
+                allLogs.add("Package $packageCount (MORE): $logData")
+                Timber.d("Activity logs package $packageCount: $logData")
+              }
+              0x04.toByte() -> {
+                // NOT_FOUND - last package or no logs
+                if (response.size > 1) {
+                  val logData = response.print()
+                  allLogs.add("Package $packageCount (LAST): $logData")
+                  Timber.d("Activity logs last package: $logData")
+                } else {
+                  allLogs.add("Package $packageCount: No more logs available")
+                }
+              }
+              0x03.toByte() -> {
+                // BUSY - wait and retry
+                allLogs.add("Package $packageCount: Lock busy, waiting 200ms...")
+                kotlinx.coroutines.delay(200)
+              }
+              0x02.toByte() -> {
+                addMessage("❌ MTU too small (minimum 98 bytes required)")
+                return@launch
+              }
+              0x07.toByte() -> {
+                addMessage("❌ No permission to read logs")
+                return@launch
+              }
+              else -> {
+                addMessage("❌ Unknown result code: ${resultCode.toString(16)}")
+                return@launch
+              }
+            }
+
+            // Safety limit to prevent infinite loops
+            if (packageCount >= 100) {
+              allLogs.add("⚠️ Stopped after 100 packages (safety limit)")
+              break
+            }
+
+          } while (resultCode != 0x04.toByte()) // Continue until NOT_FOUND
+
+          val summary = """
+            |📋 Activity Logs Downloaded
+            |
+            |Total packages: $packageCount
+            |${allLogs.joinToString("\n")}
+          """.trimMargin()
+
+          addMessage(summary)
+        } catch (e: Exception) {
+          addMessage("❌ Failed to download logs: ${e.message}")
+          Timber.e(e, "Error downloading activity logs")
+        }
+      }
+    }
+  }
+
   fun setupGetDeviceSettingsClickListener(getDeviceSettings: suspend (Boolean) -> DeviceSettings?) {
     binding.buttonGetDeviceSettings.setOnClickListener {
       lifecycleScope.launch {

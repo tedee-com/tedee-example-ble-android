@@ -21,6 +21,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
   late AnimationController _animationController;
   late Animation<double> _circlePositionAnimation;
 
+  // Animation controller for operation indicator (spinning dot)
+  late AnimationController _operationAnimationController;
+  late Animation<double> _operationRotationAnimation;
+
   // Circle position: 0.0 = left, 0.5 = center, 1.0 = right
   double _targetCirclePosition = 0.5;
 
@@ -41,11 +45,19 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     });
   }
 
+  // Check if lock is performing an operation (to show spinning indicator)
+  bool _isLockOperating() {
+    final stateLower = _lockState.toLowerCase();
+    return stateLower.contains('locking') ||
+           stateLower.contains('unlocking') ||
+           stateLower.contains('pulling');
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // Initialize animation controller
+    // Initialize animation controller for circle movement
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -57,6 +69,18 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
       if (!_isDragging) {
         setState(() {});
       }
+    });
+
+    // Initialize animation controller for operation indicator (spinning dot)
+    _operationAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500), // Slow, smooth rotation
+      vsync: this,
+    );
+
+    _operationRotationAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _operationAnimationController, curve: Curves.linear),
+    )..addListener(() {
+      setState(() {});
     });
 
     // Listen for connection state changes
@@ -137,7 +161,15 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
   void _updateCirclePositionBasedOnState() {
     if (!_isConnected) {
       _updateCirclePosition(0.5); // Center when not connected
+      _stopOperationAnimation();
       return;
+    }
+
+    // Start or stop the operation animation based on lock state
+    if (_isLockOperating()) {
+      _startOperationAnimation();
+    } else {
+      _stopOperationAnimation();
     }
 
     // Map lock states to circle positions
@@ -182,6 +214,19 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     );
 
     _animationController.forward(from: 0.0);
+  }
+
+  void _startOperationAnimation() {
+    if (!_operationAnimationController.isAnimating) {
+      _operationAnimationController.repeat(); // Infinite rotation
+    }
+  }
+
+  void _stopOperationAnimation() {
+    if (_operationAnimationController.isAnimating) {
+      _operationAnimationController.stop();
+      _operationAnimationController.reset();
+    }
   }
 
   Color _getBackgroundColor() {
@@ -308,6 +353,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     _lockService.removeNotificationListener(_notificationListener);
 
     _animationController.dispose();
+    _operationAnimationController.dispose();
     super.dispose();
   }
 
@@ -385,6 +431,39 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
                 ),
               ),
             ),
+
+            // Operation indicator: spinning dot around the circle
+            if (_isLockOperating() && !_isDragging)
+              Positioned(
+                left: circleLeft,
+                top: screenHeight / 2 - (circleDiameter / 2),
+                child: SizedBox(
+                  width: circleDiameter,
+                  height: circleDiameter,
+                  child: Transform.rotate(
+                    angle: _operationRotationAnimation.value * 2 * 3.14159, // Full rotation
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(top: 8), // Distance from circle edge
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.9),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.5),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             // Guide ring for unlocked state (shows swipe options)
             if (_isConnected && _lockState.toLowerCase() == 'unlocked' && !_isDragging)

@@ -98,7 +98,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
     // Listen for lock state changes
     _stateListener = (lockState) {
-      _addLog('🔔 Lock State: $lockState');
+      _addLog('🔔 Lock State: "$lockState" (toLowerCase: "${lockState.toLowerCase()}")');
       setState(() {
         _lockState = lockState;
         _updateCirclePositionBasedOnState();
@@ -499,6 +499,30 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                   ),
                 ),
               ),
+
+            // DEBUG: Current state indicator (top center)
+            Positioned(
+              top: 50,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'State: $_lockState',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
 
             // Button to access advanced controls (bottom right)
             Positioned(

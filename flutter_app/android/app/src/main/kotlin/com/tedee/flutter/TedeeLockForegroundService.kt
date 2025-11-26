@@ -38,6 +38,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
         const val ACTION_OPEN_LOCK = "com.tedee.flutter.OPEN_LOCK"
         const val ACTION_CLOSE_LOCK = "com.tedee.flutter.CLOSE_LOCK"
         const val ACTION_PULL_SPRING = "com.tedee.flutter.PULL_SPRING"
+        const val ACTION_GET_LOCK_STATE = "com.tedee.flutter.GET_LOCK_STATE"
+        const val ACTION_GET_BATTERY = "com.tedee.flutter.GET_BATTERY"
+        const val ACTION_GET_FIRMWARE = "com.tedee.flutter.GET_FIRMWARE"
 
         // Broadcast actions for Flutter communication
         const val BROADCAST_CONNECTION_STATE = "com.tedee.flutter.CONNECTION_STATE"
@@ -131,6 +134,21 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
             ACTION_PULL_SPRING -> {
                 executeCommand("Pull Spring") {
                     lockConnectionManager.sendCommand(0x52.toByte(), null)
+                }
+            }
+            ACTION_GET_LOCK_STATE -> {
+                executeCommand("Get Lock State") {
+                    lockConnectionManager.getLockState()
+                }
+            }
+            ACTION_GET_BATTERY -> {
+                executeCommand("Get Battery") {
+                    lockConnectionManager.sendCommand(0x0C.toByte(), null)
+                }
+            }
+            ACTION_GET_FIRMWARE -> {
+                executeCommand("Get Firmware") {
+                    lockConnectionManager.getFirmwareVersion(false)
                 }
             }
         }

@@ -176,49 +176,67 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     }
                 }
                 "getLockState" -> {
-                    scope.launch {
-                        try {
-                            val response = lockConnectionManager.getLockState()
-                            // Use getReadableLockStatusResult() for lock state (not getReadableLockCommandResult)
-                            val readable = response?.getReadableLockStatusResult() ?: "No response"
-                            result.success(readable)
-                        } catch (e: Exception) {
-                            result.error("GET_STATE_FAILED", e.message, null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_GET_LOCK_STATE)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                val response = lockConnectionManager.getLockState()
+                                // Use getReadableLockStatusResult() for lock state (not getReadableLockCommandResult)
+                                val readable = response?.getReadableLockStatusResult() ?: "No response"
+                                result.success(readable)
+                            } catch (e: Exception) {
+                                result.error("GET_STATE_FAILED", e.message, null)
+                            }
                         }
                     }
                 }
                 "getBattery" -> {
-                    scope.launch {
-                        try {
-                            // GET_BATTERY command (0x0C)
-                            val response = lockConnectionManager.sendCommand(0x0C.toByte(), null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_GET_BATTERY)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                // GET_BATTERY command (0x0C)
+                                val response = lockConnectionManager.sendCommand(0x0C.toByte(), null)
 
-                            if (response == null || response.size < 4) {
-                                result.error("GET_BATTERY_FAILED", "Invalid response", null)
-                                return@launch
+                                if (response == null || response.size < 4) {
+                                    result.error("GET_BATTERY_FAILED", "Invalid response", null)
+                                    return@launch
+                                }
+
+                                // Response: [COMMAND_ECHO, RESULT, BATTERY_LEVEL, CHARGING_STATUS]
+                                val batteryLevel = response[2].toInt() and 0xFF
+                                val chargingStatus = response[3].toInt() and 0xFF
+                                val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
+
+                                val batteryInfo = "Battery: $batteryLevel% - $chargingText"
+                                result.success(batteryInfo)
+                            } catch (e: Exception) {
+                                result.error("GET_BATTERY_FAILED", e.message, null)
                             }
-
-                            // Response: [COMMAND_ECHO, RESULT, BATTERY_LEVEL, CHARGING_STATUS]
-                            val batteryLevel = response[2].toInt() and 0xFF
-                            val chargingStatus = response[3].toInt() and 0xFF
-                            val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
-
-                            val batteryInfo = "Battery: $batteryLevel% - $chargingText"
-                            result.success(batteryInfo)
-                        } catch (e: Exception) {
-                            result.error("GET_BATTERY_FAILED", e.message, null)
                         }
                     }
                 }
                 "getFirmwareVersion" -> {
-                    scope.launch {
-                        try {
-                            // Pass false = lock is already connected (not being added)
-                            val response = lockConnectionManager.getFirmwareVersion(false)
-                            val readable = response?.toString() ?: "No response"
-                            result.success(readable)
-                        } catch (e: Exception) {
-                            result.error("GET_FIRMWARE_FAILED", e.message, null)
+                    // If background service is running, delegate to it instead of using our connection
+                    if (isBackgroundServiceRunning()) {
+                        val message = sendCommandToBackgroundService(TedeeLockForegroundService.ACTION_GET_FIRMWARE)
+                        result.success(message)
+                    } else {
+                        scope.launch {
+                            try {
+                                // Pass false = lock is already connected (not being added)
+                                val response = lockConnectionManager.getFirmwareVersion(false)
+                                val readable = response?.toString() ?: "No response"
+                                result.success(readable)
+                            } catch (e: Exception) {
+                                result.error("GET_FIRMWARE_FAILED", e.message, null)
+                            }
                         }
                     }
                 }

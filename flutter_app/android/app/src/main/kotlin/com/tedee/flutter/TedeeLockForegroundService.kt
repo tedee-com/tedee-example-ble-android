@@ -176,9 +176,27 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     private fun startStatePolling() {
         statePollingJob?.cancel()
         statePollingJob = serviceScope.launch {
+            // FIRST CHECK: Read state IMMEDIATELY after secure connection
+            try {
+                Timber.i("🔍 Initial state check after secure connection...")
+                val response = lockConnectionManager.getLockState()
+
+                if (response != null && response.size >= 2) {
+                    val state = response[1]
+                    val stateHex = "0x%02X".format(state.toInt() and 0xFF)
+                    Timber.i("📊 Initial state: ${state.getReadableLockState()} ($stateHex)")
+
+                    // Trigger auto-actions immediately if needed
+                    handleLockStateUpdate(state)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Initial state check failed")
+            }
+
+            // CONTINUOUS POLLING: Then poll every 5 seconds
             while (isConnected) {
                 try {
-                    delay(5000) // Poll every 5 seconds
+                    delay(5000) // Wait 5 seconds between checks
 
                     if (isConnected) {
                         Timber.d("🔍 Polling lock state...")
@@ -189,7 +207,6 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                             val stateHex = "0x%02X".format(state.toInt() and 0xFF)
                             Timber.i("📊 Polled state: ${state.getReadableLockState()} ($stateHex)")
 
-                            // Manually trigger onLockStatusChanged logic
                             handleLockStateUpdate(state)
                         }
                     }

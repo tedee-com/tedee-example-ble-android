@@ -58,10 +58,16 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
     // Listen for lock state changes
     _lockService.setLockStateListener((lockState) {
+      print('🔔 Lock State Changed: "$lockState"'); // Debug
       setState(() {
         _lockState = lockState;
         _updateCirclePositionBasedOnState();
       });
+    });
+
+    // Listen for notifications (for debugging)
+    _lockService.setNotificationListener((message) {
+      print('📱 Notification: $message'); // Debug
     });
 
     // Restore state from background service if running
@@ -83,26 +89,31 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
   void _updateCirclePositionBasedOnState() {
     if (!_isConnected) {
+      print('⚪ Circle: Center (not connected)'); // Debug
       _updateCirclePosition(0.5); // Center when not connected
       return;
     }
 
     // Map lock states to circle positions
-    switch (_lockState.toLowerCase()) {
-      case 'locked':
-      case 'locking':
-        _updateCirclePosition(0.0); // Left
-        break;
-      case 'unlocked':
-      case 'unlocking':
-        _updateCirclePosition(0.5); // Center
-        break;
-      case 'pull_spring':
-      case 'pulling':
-        _updateCirclePosition(1.0); // Right
-        break;
-      default:
-        _updateCirclePosition(0.5); // Center for unknown
+    final stateLower = _lockState.toLowerCase();
+    print('🎯 Mapping state "$_lockState" (lowercase: "$stateLower")'); // Debug
+
+    if (stateLower.contains('locked') && !stateLower.contains('unlocked')) {
+      // Locked state
+      print('🔴 Circle: LEFT (locked)'); // Debug
+      _updateCirclePosition(0.0); // Left
+    } else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
+      // Unlocked/Open state
+      print('🟡 Circle: CENTER (unlocked)'); // Debug
+      _updateCirclePosition(0.5); // Center
+    } else if (stateLower.contains('pull') || stateLower.contains('spring')) {
+      // Pull spring state
+      print('🟢 Circle: RIGHT (pull spring)'); // Debug
+      _updateCirclePosition(1.0); // Right
+    } else {
+      // Unknown state
+      print('⚫ Circle: CENTER (unknown: "$_lockState")'); // Debug
+      _updateCirclePosition(0.5); // Center for unknown
     }
   }
 
@@ -333,12 +344,15 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
               right: 32,
               child: FloatingActionButton(
                 onPressed: () {
+                  print('⚙️ Settings button pressed - navigating to advanced controls'); // Debug
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const LockControlScreen(),
                     ),
-                  );
+                  ).then((value) {
+                    print('⚙️ Returned from advanced controls'); // Debug
+                  });
                 },
                 backgroundColor: Colors.white.withOpacity(0.2),
                 child: const Icon(Icons.settings, color: Colors.white),

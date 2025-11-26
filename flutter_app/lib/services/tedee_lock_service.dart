@@ -2,7 +2,13 @@ import 'package:flutter/services.dart';
 
 /// Service that communicates with native Android code via MethodChannel
 /// Handles all Tedee Lock BLE operations through the native Tedee SDK
+/// Singleton pattern ensures all screens share the same instance and listeners
 class TedeeLockService {
+  // Singleton pattern
+  static final TedeeLockService _instance = TedeeLockService._internal();
+  factory TedeeLockService() => _instance;
+  TedeeLockService._internal();
+
   static const MethodChannel _channel = MethodChannel('com.tedee.flutter/lock');
 
   /// Connect to lock with certificate
@@ -181,43 +187,77 @@ class TedeeLockService {
     }
   }
 
-  // Callback functions
-  Function(String)? _notificationListener;
-  Function(bool)? _connectionStateListener;
-  Function(String)? _lockStateListener;
+  // Callback functions - now support multiple listeners
+  final List<Function(String)> _notificationListeners = [];
+  final List<Function(bool)> _connectionStateListeners = [];
+  final List<Function(String)> _lockStateListeners = [];
+
+  bool _methodCallHandlerInitialized = false;
 
   /// Set up listener for lock notifications from native side
   void setNotificationListener(Function(String) onNotification) {
-    _notificationListener = onNotification;
-    _setupMethodCallHandler();
+    if (!_notificationListeners.contains(onNotification)) {
+      _notificationListeners.add(onNotification);
+    }
+    _ensureMethodCallHandler();
   }
 
   /// Set up listener for connection state changes from background service
   void setConnectionStateListener(Function(bool) onConnectionStateChanged) {
-    _connectionStateListener = onConnectionStateChanged;
-    _setupMethodCallHandler();
+    if (!_connectionStateListeners.contains(onConnectionStateChanged)) {
+      _connectionStateListeners.add(onConnectionStateChanged);
+    }
+    _ensureMethodCallHandler();
   }
 
   /// Set up listener for lock state changes from background service
   void setLockStateListener(Function(String) onLockStateChanged) {
-    _lockStateListener = onLockStateChanged;
-    _setupMethodCallHandler();
+    if (!_lockStateListeners.contains(onLockStateChanged)) {
+      _lockStateListeners.add(onLockStateChanged);
+    }
+    _ensureMethodCallHandler();
   }
 
-  /// Internal method to set up method call handler
-  void _setupMethodCallHandler() {
+  /// Remove listeners (call from dispose)
+  void removeNotificationListener(Function(String) onNotification) {
+    _notificationListeners.remove(onNotification);
+  }
+
+  void removeConnectionStateListener(Function(bool) onConnectionStateChanged) {
+    _connectionStateListeners.remove(onConnectionStateChanged);
+  }
+
+  void removeLockStateListener(Function(String) onLockStateChanged) {
+    _lockStateListeners.remove(onLockStateChanged);
+  }
+
+  /// Internal method to set up method call handler (only once)
+  void _ensureMethodCallHandler() {
+    if (_methodCallHandlerInitialized) return;
+
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onNotification':
-          _notificationListener?.call(call.arguments as String);
+          final message = call.arguments as String;
+          for (var listener in _notificationListeners) {
+            listener(message);
+          }
           break;
         case 'onConnectionStateChanged':
-          _connectionStateListener?.call(call.arguments as bool);
+          final isConnected = call.arguments as bool;
+          for (var listener in _connectionStateListeners) {
+            listener(isConnected);
+          }
           break;
         case 'onLockStateChanged':
-          _lockStateListener?.call(call.arguments as String);
+          final lockState = call.arguments as String;
+          for (var listener in _lockStateListeners) {
+            listener(lockState);
+          }
           break;
       }
     });
+
+    _methodCallHandlerInitialized = true;
   }
 }

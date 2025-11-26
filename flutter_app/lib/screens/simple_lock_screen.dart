@@ -27,6 +27,11 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
   double _currentDragPosition = 0.5;
   bool _isDragging = false;
 
+  // Store listener references for cleanup
+  late Function(bool) _connectionListener;
+  late Function(String) _stateListener;
+  late Function(String) _notificationListener;
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +51,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     });
 
     // Listen for connection state changes
-    _lockService.setConnectionStateListener((isConnected) {
+    _connectionListener = (isConnected) {
       setState(() {
         _isConnected = isConnected;
         if (!isConnected) {
@@ -54,21 +59,24 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
           _updateCirclePosition(0.5); // Center when disconnected
         }
       });
-    });
+    };
+    _lockService.setConnectionStateListener(_connectionListener);
 
     // Listen for lock state changes
-    _lockService.setLockStateListener((lockState) {
+    _stateListener = (lockState) {
       print('🔔 Lock State Changed: "$lockState"'); // Debug
       setState(() {
         _lockState = lockState;
         _updateCirclePositionBasedOnState();
       });
-    });
+    };
+    _lockService.setLockStateListener(_stateListener);
 
     // Listen for notifications (for debugging)
-    _lockService.setNotificationListener((message) {
+    _notificationListener = (message) {
       print('📱 Notification: $message'); // Debug
-    });
+    };
+    _lockService.setNotificationListener(_notificationListener);
 
     // Restore state from background service if running
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -252,6 +260,11 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
   @override
   void dispose() {
+    // Remove listeners to prevent memory leaks
+    _lockService.removeConnectionStateListener(_connectionListener);
+    _lockService.removeLockStateListener(_stateListener);
+    _lockService.removeNotificationListener(_notificationListener);
+
     _animationController.dispose();
     super.dispose();
   }

@@ -94,8 +94,8 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         // Set up SignedTimeProvider for lock connection
         lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(scope)
 
-        // Note: BroadcastReceiver registration moved to configureFlutterEngine()
-        // to ensure methodChannel is initialized before receiving broadcasts
+        // Note: BroadcastReceiver registration happens in onResume()
+        // and unregistration in onPause() for proper lifecycle management
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -385,19 +385,40 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                 else -> result.notImplemented()
             }
         }
+    }
 
-        // Register broadcast receiver for service state updates
-        // Registered here (after methodChannel init) to avoid crashes when service broadcasts before Flutter is ready
-        if (!isReceiverRegistered) {
-            val filter = IntentFilter().apply {
-                addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
-                addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
-                addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
+    override fun onResume() {
+        super.onResume()
+
+        // Register receiver when app comes to foreground
+        if (!isReceiverRegistered && methodChannel != null) {
+            try {
+                val filter = IntentFilter().apply {
+                    addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
+                    addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
+                    addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
+                }
+                registerReceiver(serviceStateReceiver, filter)
+                isReceiverRegistered = true
+                Timber.d("📡 Registered broadcast receiver in onResume()")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to register receiver")
             }
-            registerReceiver(serviceStateReceiver, filter)
-            isReceiverRegistered = true
-            Timber.d("📡 Registered broadcast receiver for service updates")
         }
+    }
+
+    override fun onPause() {
+        // Unregister receiver when app goes to background
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(serviceStateReceiver)
+                isReceiverRegistered = false
+                Timber.d("📡 Unregistered broadcast receiver in onPause()")
+            } catch (e: Exception) {
+                Timber.e(e, "Error unregistering receiver")
+            }
+        }
+        super.onPause()
     }
 
     private fun connectToLock(
@@ -512,15 +533,7 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     }
 
     override fun onDestroy() {
-        if (isReceiverRegistered) {
-            try {
-                unregisterReceiver(serviceStateReceiver)
-                isReceiverRegistered = false
-                Timber.d("📡 Unregistered broadcast receiver")
-            } catch (e: Exception) {
-                Timber.e(e, "Error unregistering receiver")
-            }
-        }
+        // Receiver is unregistered in onPause(), so no need to do it here
         lockConnectionManager.clear()
         super.onDestroy()
     }

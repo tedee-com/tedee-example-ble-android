@@ -38,6 +38,7 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     private val tedeeFlutterBridge by lazy { TedeeFlutterBridge(this, lockConnectionManager) }
     private val mobileService by lazy { MobileService() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var isReceiverRegistered = false
 
     // BroadcastReceiver for service state updates
     private val serviceStateReceiver = object : BroadcastReceiver() {
@@ -93,14 +94,8 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         // Set up SignedTimeProvider for lock connection
         lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(scope)
 
-        // Register broadcast receiver for service state updates
-        val filter = IntentFilter().apply {
-            addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
-            addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
-            addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
-        }
-        registerReceiver(serviceStateReceiver, filter)
-        Timber.d("📡 Registered broadcast receiver for service updates")
+        // Note: BroadcastReceiver registration moved to configureFlutterEngine()
+        // to ensure methodChannel is initialized before receiving broadcasts
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -390,6 +385,19 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                 else -> result.notImplemented()
             }
         }
+
+        // Register broadcast receiver for service state updates
+        // Registered here (after methodChannel init) to avoid crashes when service broadcasts before Flutter is ready
+        if (!isReceiverRegistered) {
+            val filter = IntentFilter().apply {
+                addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
+                addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
+                addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
+            }
+            registerReceiver(serviceStateReceiver, filter)
+            isReceiverRegistered = true
+            Timber.d("📡 Registered broadcast receiver for service updates")
+        }
     }
 
     private fun connectToLock(
@@ -504,11 +512,14 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     }
 
     override fun onDestroy() {
-        try {
-            unregisterReceiver(serviceStateReceiver)
-            Timber.d("📡 Unregistered broadcast receiver")
-        } catch (e: Exception) {
-            Timber.e(e, "Error unregistering receiver")
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(serviceStateReceiver)
+                isReceiverRegistered = false
+                Timber.d("📡 Unregistered broadcast receiver")
+            } catch (e: Exception) {
+                Timber.e(e, "Error unregistering receiver")
+            }
         }
         lockConnectionManager.clear()
         super.onDestroy()

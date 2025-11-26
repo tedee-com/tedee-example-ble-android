@@ -15,6 +15,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
   bool _isConnecting = false;
   bool _keepConnection = true;
   bool _autoModeEnabled = false; // Single switch: auto-connect + auto-actions
+  String _lockState = "Unknown"; // Current lock state
   final List<String> _messages = [];
 
   // Editable fields with preset values from Constants.kt
@@ -266,6 +267,40 @@ class _LockControlScreenState extends State<LockControlScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Auto Mode Section
+                    Card(
+                      color: _autoModeEnabled ? Colors.deepPurple[50] : null,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SwitchListTile(
+                          title: const Text(
+                            '🤖 Auto Mode',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            _autoModeEnabled
+                                ? 'Status: $_lockState\n🔒 CLOSED → OPEN  |  🔓 OPEN → PULL + CLOSE'
+                                : 'Enable auto-connect and smart actions',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          value: _autoModeEnabled,
+                          onChanged: (value) async {
+                            if (value) {
+                              await _startAutoMode();
+                            } else {
+                              await _stopAutoMode();
+                            }
+                          },
+                          activeColor: Colors.deepPurple,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
                     // Configuration Section
                     Card(
                       child: Padding(
@@ -326,25 +361,6 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                       });
                                     },
                               activeColor: const Color(0xFF22345a),
-                            ),
-                            const Divider(),
-                            SwitchListTile(
-                              title: const Text('🤖 Auto Mode'),
-                              subtitle: Text(
-                                _autoModeEnabled
-                                    ? '🔄 Active - Auto-connect + Smart Actions\n🔒 CLOSED → OPEN\n🔓 OPEN → PULL SPRING + CLOSE'
-                                    : 'Enable auto-connect and smart lock actions',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              value: _autoModeEnabled,
-                              onChanged: (value) async {
-                                if (value) {
-                                  await _startAutoMode();
-                                } else {
-                                  await _stopAutoMode();
-                                }
-                              },
-                              activeColor: Colors.deepPurple,
                             ),
                           ],
                         ),

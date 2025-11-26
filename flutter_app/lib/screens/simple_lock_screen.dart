@@ -168,44 +168,41 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     // Map lock states to circle positions
     final stateLower = _lockState.toLowerCase();
 
-    // LOCKING state (in progress): stay LEFT + show animation
-    if (stateLower == 'locking') {
-      _addLog('🔴 Circle → LEFT (locking - operation in progress)');
+    // LOCK_CLOSING state (in progress): stay LEFT + show animation
+    if (stateLower == 'lock_closing') {
+      _addLog('🔴 Circle → LEFT (lock_closing - operation in progress)');
       _startOperationAnimation();
       _updateCirclePosition(0.0); // Left
     }
-    // LOCKED state (final): LEFT, no animation
-    else if ((stateLower.contains('locked') || stateLower.contains('closed')) &&
-        !stateLower.contains('unlocked') &&
-        !stateLower.contains('open')) {
-      _addLog('🔴 Circle → LEFT (locked/closed - final)');
+    // LOCK_CLOSED state (final): LEFT, no animation
+    else if (stateLower == 'lock_closed') {
+      _addLog('🔴 Circle → LEFT (lock_closed - final)');
       _stopOperationAnimation();
       _updateCirclePosition(0.0); // Left
     }
-    // UNLOCKING state (in progress): stay RIGHT + show animation
-    else if (stateLower == 'unlocking') {
-      _addLog('🟡 Circle → RIGHT (unlocking - operation in progress)');
+    // LOCK_OPENING states (in progress): stay RIGHT + show animation
+    // Handles: lock_opening, lock_opening with pull, lock_opening with spring pull
+    else if (stateLower.startsWith('lock_opening')) {
+      _addLog('🟡 Circle → RIGHT (lock_opening* - operation in progress)');
       _startOperationAnimation();
       _updateCirclePosition(1.0); // Right
     }
-    // UNLOCKED state (final): CENTER, no animation
-    else if (stateLower.contains('unlocked') ||
-             stateLower.contains('open')) {
-      _addLog('🟡 Circle → CENTER (unlocked/open - final)');
+    // LOCK_OPENED state (final): CENTER, no animation
+    else if (stateLower == 'lock_opened') {
+      _addLog('🟡 Circle → CENTER (lock_opened - final)');
       _stopOperationAnimation();
       _updateCirclePosition(0.5); // Center
     }
-    // PULLING state (in progress): show animation
-    else if (stateLower == 'pulling') {
-      _addLog('🟢 Circle → RIGHT (pulling - operation in progress)');
-      _startOperationAnimation();
-      _updateCirclePosition(1.0); // Right
-    }
-    // PULL SPRING state (final): RIGHT, no animation
-    else if (stateLower.contains('pull') || stateLower.contains('spring')) {
-      _addLog('🟢 Circle → RIGHT (pull spring - final)');
+    // Fallback for any other states containing these keywords
+    else if (stateLower.contains('closed') && !stateLower.contains('open')) {
+      _addLog('🔴 Circle → LEFT (contains "closed")');
       _stopOperationAnimation();
-      _updateCirclePosition(1.0); // Right
+      _updateCirclePosition(0.0); // Left
+    }
+    else if (stateLower.contains('opened') || stateLower.contains('open')) {
+      _addLog('🟡 Circle → CENTER (contains "opened"/"open")');
+      _stopOperationAnimation();
+      _updateCirclePosition(0.5); // Center
     }
     // Unknown state - stay center
     else {
@@ -448,9 +445,8 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             ),
 
             // Operation indicator: spinning dot around the circle
-            if (_lockState.toLowerCase() == 'locking' ||
-                _lockState.toLowerCase() == 'unlocking' ||
-                _lockState.toLowerCase() == 'pulling')
+            if (_lockState.toLowerCase() == 'lock_closing' ||
+                _lockState.toLowerCase().startsWith('lock_opening'))
               Positioned(
                 left: circleLeft,
                 top: screenHeight / 2 - (circleDiameter / 2),

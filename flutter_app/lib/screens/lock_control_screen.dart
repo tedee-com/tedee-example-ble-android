@@ -433,7 +433,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: _isConnected ? _openLock : null,
+                                    onPressed: (_isConnected || _autoModeEnabled) ? _openLock : null,
                                     icon: const Icon(Icons.lock_open),
                                     label: const Text('Open'),
                                     style: ElevatedButton.styleFrom(
@@ -446,7 +446,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: _isConnected ? _closeLock : null,
+                                    onPressed: (_isConnected || _autoModeEnabled) ? _closeLock : null,
                                     icon: const Icon(Icons.lock),
                                     label: const Text('Close'),
                                     style: ElevatedButton.styleFrom(
@@ -463,7 +463,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: _isConnected ? _pullSpring : null,
+                                    onPressed: (_isConnected || _autoModeEnabled) ? _pullSpring : null,
                                     icon: const Icon(
                                       Icons.settings_input_component,
                                     ),

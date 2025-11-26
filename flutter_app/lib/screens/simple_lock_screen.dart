@@ -14,6 +14,8 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
   bool _isConnected = false;
   String _lockState = "Unknown";
+  bool _autoModeStarted = false;
+  final List<String> _logs = [];
 
   // Animation controller for smooth circle movement
   late AnimationController _animationController;
@@ -31,6 +33,13 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
   late Function(bool) _connectionListener;
   late Function(String) _stateListener;
   late Function(String) _notificationListener;
+
+  void _addLog(String message) {
+    setState(() {
+      _logs.insert(0, message);
+      if (_logs.length > 50) _logs.removeLast(); // Keep last 50 logs
+    });
+  }
 
   @override
   void initState() {
@@ -52,6 +61,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
     // Listen for connection state changes
     _connectionListener = (isConnected) {
+      _addLog('🔌 Connection: ${isConnected ? "CONNECTED" : "DISCONNECTED"}');
       setState(() {
         _isConnected = isConnected;
         if (!isConnected) {
@@ -64,7 +74,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
     // Listen for lock state changes
     _stateListener = (lockState) {
-      print('🔔 Lock State Changed: "$lockState"'); // Debug
+      _addLog('🔔 Lock State: $lockState');
       setState(() {
         _lockState = lockState;
         _updateCirclePositionBasedOnState();
@@ -72,62 +82,82 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     };
     _lockService.setLockStateListener(_stateListener);
 
-    // Listen for notifications (for debugging)
+    // Listen for notifications
     _notificationListener = (message) {
-      print('📱 Notification: $message'); // Debug
+      _addLog('📱 $message');
     };
     _lockService.setNotificationListener(_notificationListener);
 
-    // Restore state from background service if running
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _restoreState();
+    // Auto-start Auto Mode
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _restoreState();
+
+      // Start Auto Mode if not already running
+      final isRunning = await _lockService.isBackgroundServiceRunning();
+      if (!isRunning && !_autoModeStarted) {
+        _addLog('🤖 Auto-starting Auto Mode...');
+        await _startAutoMode();
+      }
     });
+  }
+
+  Future<void> _startAutoMode() async {
+    try {
+      await _lockService.startBackgroundService(
+        serialNumber: '10530206-030484',
+        deviceId: '273450',
+        name: 'Lock-40C5',
+        enableAutoActions: false, // Manual control only
+      );
+      setState(() {
+        _autoModeStarted = true;
+      });
+      _addLog('✅ Auto Mode started');
+    } catch (e) {
+      _addLog('❌ Failed to start Auto Mode: $e');
+    }
   }
 
   Future<void> _restoreState() async {
     try {
-      print('🔄 Checking background service status...'); // Debug
+      _addLog('🔄 Checking service status...');
       final isRunning = await _lockService.isBackgroundServiceRunning();
-      print('🔄 Background service running: $isRunning'); // Debug
 
       if (isRunning) {
-        print('🔄 Requesting state sync from service...'); // Debug
+        _addLog('🔄 Service running - syncing state...');
         await _lockService.requestStateSync();
-        print('🔄 State sync requested'); // Debug
       } else {
-        print('⚠️ Background service not running - state may not sync'); // Debug
+        _addLog('⚠️ Service not running');
       }
     } catch (e) {
-      print('❌ Error during state restoration: $e'); // Debug
+      _addLog('❌ Error: $e');
     }
   }
 
   void _updateCirclePositionBasedOnState() {
     if (!_isConnected) {
-      print('⚪ Circle: Center (not connected)'); // Debug
       _updateCirclePosition(0.5); // Center when not connected
       return;
     }
 
     // Map lock states to circle positions
     final stateLower = _lockState.toLowerCase();
-    print('🎯 Mapping state "$_lockState" (lowercase: "$stateLower")'); // Debug
 
     if (stateLower.contains('locked') && !stateLower.contains('unlocked')) {
       // Locked state
-      print('🔴 Circle: LEFT (locked)'); // Debug
+      _addLog('🔴 Circle → LEFT (locked)');
       _updateCirclePosition(0.0); // Left
     } else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
       // Unlocked/Open state
-      print('🟡 Circle: CENTER (unlocked)'); // Debug
+      _addLog('🟡 Circle → CENTER (unlocked)');
       _updateCirclePosition(0.5); // Center
     } else if (stateLower.contains('pull') || stateLower.contains('spring')) {
       // Pull spring state
-      print('🟢 Circle: RIGHT (pull spring)'); // Debug
+      _addLog('🟢 Circle → RIGHT (pull spring)');
       _updateCirclePosition(1.0); // Right
     } else {
       // Unknown state
-      print('⚫ Circle: CENTER (unknown: "$_lockState")'); // Debug
+      _addLog('⚫ Circle → CENTER (unknown: "$_lockState")');
       _updateCirclePosition(0.5); // Center for unknown
     }
   }
@@ -288,20 +318,24 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              _getBackgroundColor(),
-              _getBackgroundColor().withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
+      body: Column(
+        children: [
+          // Main UI with circle
+          Expanded(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _getBackgroundColor(),
+                    _getBackgroundColor().withOpacity(0.8),
+                  ],
+                ),
+              ),
+              child: Stack(
+                children: [
             // Main draggable circle
             Positioned(
               left: circleLeft,
@@ -364,14 +398,14 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
               right: 32,
               child: FloatingActionButton(
                 onPressed: () async {
-                  print('⚙️ Settings button pressed - navigating to advanced controls'); // Debug
+                  _addLog('⚙️ Opening advanced controls...');
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const LockControlScreen(),
                     ),
                   );
-                  print('⚙️ Returned from advanced controls - refreshing state'); // Debug
+                  _addLog('⚙️ Returned from advanced controls');
                   // Refresh state when returning from settings
                   await _restoreState();
                 },
@@ -381,6 +415,82 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
             ),
           ],
         ),
+      ),
+    ),
+
+          // Log viewer at bottom
+          Container(
+            height: 150,
+            color: Colors.black87,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Colors.grey[900],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.terminal, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Debug Log',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Connected: ${_isConnected ? "✅" : "❌"} | State: $_lockState',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _logs.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No logs yet',
+                            style: TextStyle(color: Colors.grey, fontSize: 11),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _logs.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey[800]!,
+                                    width: 0.5,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                _logs[index],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'monospace',
+                                  fontSize: 10,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

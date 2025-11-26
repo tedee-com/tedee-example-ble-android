@@ -171,6 +171,16 @@ class TedeeLockService {
     }
   }
 
+  /// Request state sync from background service (only when Flutter is ready)
+  Future<bool> requestStateSync() async {
+    try {
+      final bool result = await _channel.invokeMethod('requestStateSync');
+      return result;
+    } on PlatformException catch (e) {
+      return false;
+    }
+  }
+
   // Callback functions
   Function(String)? _notificationListener;
   Function(bool)? _connectionStateListener;

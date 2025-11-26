@@ -70,6 +70,9 @@ class _LockControlScreenState extends State<LockControlScreen> {
           _autoModeEnabled = true;
           _messages.insert(0, '🔄 Auto Mode restored from background service');
         });
+
+        // Now that Flutter is ready and listeners are set up, request state sync
+        await _lockService.requestStateSync();
       }
     } catch (e) {
       // Ignore errors during state restoration

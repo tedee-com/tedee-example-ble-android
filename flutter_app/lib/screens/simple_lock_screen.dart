@@ -34,6 +34,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
   double _currentDragPosition = 0.5;
   bool _isDragging = false;
 
+  // Rotation direction: true = clockwise (unlock), false = counterclockwise (lock, pull spring)
+  bool _rotateClockwise = true;
+
   // Timer for debouncing state updates to avoid visual glitches
   Timer? _stateUpdateDebounceTimer;
 
@@ -177,9 +180,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       // Map lock states to circle positions
       final stateLower = _lockState.toLowerCase();
 
-      // LOCK_CLOSING state (in progress): stay LEFT + show animation
+      // LOCK_CLOSING state (in progress): stay LEFT + show animation (counterclockwise)
       if (stateLower == 'lock_closing') {
         _addLog('🔴 Circle → LEFT (lock_closing - operation in progress)');
+        _rotateClockwise = false; // Counterclockwise for lock
         _startOperationAnimation();
         _updateCirclePosition(0.0); // Left
       }
@@ -189,10 +193,11 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         _stopOperationAnimation();
         _updateCirclePosition(0.0); // Left
       }
-      // LOCK_OPENING states (in progress): stay RIGHT + show animation
+      // LOCK_OPENING states (in progress): stay RIGHT + show animation (clockwise)
       // Handles: lock_opening, lock_opening with pull, lock_opening with spring pull
       else if (stateLower.startsWith('lock_opening')) {
         _addLog('🟡 Circle → RIGHT (lock_opening* - operation in progress)');
+        _rotateClockwise = true; // Clockwise for unlock
         _startOperationAnimation();
         _updateCirclePosition(1.0); // Right
       }
@@ -202,9 +207,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         _stopOperationAnimation();
         _updateCirclePosition(0.5); // Center
       }
-      // LOCK_SPRING_PULL state: RIGHT + show animation
+      // LOCK_SPRING_PULL state: RIGHT + show animation (counterclockwise)
       else if (stateLower.contains('lock_spring_pull') || stateLower.contains('spring_pull')) {
         _addLog('🟢 Circle → RIGHT (lock_spring_pull - spring pull)');
+        _rotateClockwise = false; // Counterclockwise for pull spring
         _startOperationAnimation();
         _updateCirclePosition(1.0); // Right
       }
@@ -339,11 +345,19 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         !stateLower.contains('unlocked') &&
         !stateLower.contains('open')) {
       _addLog('🔓 Swipe RIGHT from LOCKED → Opening lock');
+      // Move circle to RIGHT immediately (clockwise rotation for unlock)
+      _rotateClockwise = true;
+      _startOperationAnimation();
+      _updateCirclePosition(1.0);
       await _lockService.openLock();
     }
     // From UNLOCKED (center) → swipe RIGHT to PULL SPRING
     else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
       _addLog('🔧 Swipe RIGHT from UNLOCKED → Pull spring');
+      // Move circle to RIGHT immediately (counterclockwise rotation for pull spring)
+      _rotateClockwise = false;
+      _startOperationAnimation();
+      _updateCirclePosition(1.0);
       await _lockService.pullSpring();
     }
     else {
@@ -359,11 +373,19 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     // From UNLOCKED (center) → swipe LEFT to LOCK
     if (stateLower.contains('unlocked') || stateLower.contains('open')) {
       _addLog('🔒 Swipe LEFT from UNLOCKED → Closing lock');
+      // Move circle to LEFT immediately (counterclockwise rotation for lock)
+      _rotateClockwise = false;
+      _startOperationAnimation();
+      _updateCirclePosition(0.0);
       await _lockService.closeLock();
     }
     // From PULL SPRING (right) → swipe LEFT to LOCK
     else if (stateLower.contains('pull') || stateLower.contains('spring')) {
       _addLog('🔒 Swipe LEFT from PULL SPRING → Closing lock');
+      // Move circle to LEFT immediately (counterclockwise rotation for lock)
+      _rotateClockwise = false;
+      _startOperationAnimation();
+      _updateCirclePosition(0.0);
       await _lockService.closeLock();
     }
     else {
@@ -474,7 +496,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                   width: circleDiameter,
                   height: circleDiameter,
                   child: Transform.rotate(
-                    angle: _operationRotationAnimation.value * 2 * 3.14159, // Full rotation
+                    angle: (_rotateClockwise ? 1 : -1) * _operationRotationAnimation.value * 2 * 3.14159, // Clockwise or counterclockwise
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: Container(
@@ -483,10 +505,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                         margin: const EdgeInsets.only(top: 4), // Closer to circle edge
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.yellow, // Bright yellow for visibility
+                          color: Colors.white, // White color
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.yellow.withOpacity(0.8),
+                              color: Colors.white.withOpacity(0.8),
                               blurRadius: 12,
                               spreadRadius: 3,
                             ),

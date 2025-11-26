@@ -143,20 +143,26 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
     // Map lock states to circle positions
     final stateLower = _lockState.toLowerCase();
 
-    if (stateLower.contains('locked') && !stateLower.contains('unlocked')) {
-      // Locked state
-      _addLog('🔴 Circle → LEFT (locked)');
+    // LOCKED states: "locked", "locking", "lock_closed", "closed"
+    if ((stateLower.contains('locked') || stateLower.contains('closed')) &&
+        !stateLower.contains('unlocked') &&
+        !stateLower.contains('open')) {
+      _addLog('🔴 Circle → LEFT (locked/closed)');
       _updateCirclePosition(0.0); // Left
-    } else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
-      // Unlocked/Open state
-      _addLog('🟡 Circle → CENTER (unlocked)');
+    }
+    // UNLOCKED states: "unlocked", "unlocking", "lock_opened", "lock_open", "open"
+    else if (stateLower.contains('unlocked') ||
+             stateLower.contains('open')) {
+      _addLog('🟡 Circle → CENTER (unlocked/open)');
       _updateCirclePosition(0.5); // Center
-    } else if (stateLower.contains('pull') || stateLower.contains('spring')) {
-      // Pull spring state
+    }
+    // PULL SPRING states: "pull", "spring", "pulling"
+    else if (stateLower.contains('pull') || stateLower.contains('spring')) {
       _addLog('🟢 Circle → RIGHT (pull spring)');
       _updateCirclePosition(1.0); // Right
-    } else {
-      // Unknown state
+    }
+    // Unknown state - stay center
+    else {
       _addLog('⚫ Circle → CENTER (unknown: "$_lockState")');
       _updateCirclePosition(0.5); // Center for unknown
     }

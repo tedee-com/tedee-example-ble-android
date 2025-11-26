@@ -45,8 +45,10 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
         // Broadcast actions for Flutter communication
         const val BROADCAST_CONNECTION_STATE = "com.tedee.flutter.CONNECTION_STATE"
         const val BROADCAST_LOCK_STATE = "com.tedee.flutter.LOCK_STATE"
+        const val BROADCAST_COMMAND_RESULT = "com.tedee.flutter.COMMAND_RESULT"
         const val EXTRA_IS_CONNECTED = "is_connected"
         const val EXTRA_LOCK_STATE = "lock_state"
+        const val EXTRA_COMMAND_RESULT = "command_result"
 
         const val EXTRA_SERIAL_NUMBER = "serial_number"
         const val EXTRA_DEVICE_ID = "device_id"
@@ -149,7 +151,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
             ACTION_GET_FIRMWARE -> {
                 // getFirmwareVersion returns FirmwareVersion object, not ByteArray, so handle separately
                 if (!isConnected) {
-                    updateNotification("Not connected - Get Firmware failed", false)
+                    val errorMsg = "Not connected - Get Firmware failed"
+                    updateNotification(errorMsg, false)
+                    broadcastCommandResult(errorMsg)
                 } else {
                     serviceScope.launch {
                         try {
@@ -157,9 +161,12 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                             val firmwareVersion = lockConnectionManager.getFirmwareVersion(false)
                             val versionString = firmwareVersion?.toString() ?: "No response"
                             Timber.d("Firmware version: $versionString")
+                            broadcastCommandResult(versionString)
                             updateNotification("✅ Firmware: $versionString - $currentLockState", true)
                         } catch (e: Exception) {
                             Timber.e(e, "Get firmware failed")
+                            val errorMsg = "❌ Get Firmware failed: ${e.message}"
+                            broadcastCommandResult(errorMsg)
                             updateNotification("❌ Get Firmware failed - $currentLockState", true)
                         }
                     }
@@ -325,7 +332,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
     private fun executeCommand(commandName: String, command: suspend () -> ByteArray?) {
         if (!isConnected) {
-            updateNotification("Not connected - $commandName failed", false)
+            val errorMsg = "Not connected - $commandName failed"
+            updateNotification(errorMsg, false)
+            broadcastCommandResult(errorMsg)
             return
         }
 
@@ -334,9 +343,29 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 updateNotification("Executing $commandName...", true)
                 val response = command()
                 Timber.d("$commandName result: ${response?.print()}")
+
+                // Format result based on command type
+                val readable = when (commandName) {
+                    "Get Lock State" -> response?.getReadableLockStatusResult() ?: "No response"
+                    "Get Battery" -> {
+                        if (response != null && response.size >= 4) {
+                            val batteryLevel = response[2].toInt() and 0xFF
+                            val chargingStatus = response[3].toInt() and 0xFF
+                            val chargingText = if (chargingStatus == 1) "⚡ Charging" else "🔌 Discharging"
+                            "Battery: $batteryLevel% - $chargingText"
+                        } else {
+                            "Invalid battery response"
+                        }
+                    }
+                    else -> response?.getReadableLockCommandResult() ?: "No response"
+                }
+
+                broadcastCommandResult(readable)
                 updateNotification("✅ $commandName sent - $currentLockState", true)
             } catch (e: Exception) {
                 Timber.e(e, "$commandName failed")
+                val errorMsg = "❌ $commandName failed: ${e.message}"
+                broadcastCommandResult(errorMsg)
                 updateNotification("❌ $commandName failed - $currentLockState", true)
             }
         }
@@ -481,6 +510,14 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
         }
         sendBroadcast(intent)
         Timber.d("📡 Broadcast lock state: $state")
+    }
+
+    private fun broadcastCommandResult(result: String) {
+        val intent = Intent(BROADCAST_COMMAND_RESULT).apply {
+            putExtra(EXTRA_COMMAND_RESULT, result)
+        }
+        sendBroadcast(intent)
+        Timber.d("📡 Broadcast command result: $result")
     }
 
     override fun onNotification(message: ByteArray) {

@@ -62,6 +62,15 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                         methodChannel?.invokeMethod("onLockStateChanged", lockState)
                     }
                 }
+                TedeeLockForegroundService.BROADCAST_COMMAND_RESULT -> {
+                    val result = intent.getStringExtra(
+                        TedeeLockForegroundService.EXTRA_COMMAND_RESULT
+                    ) ?: "No result"
+                    Timber.d("📡 Received command result broadcast: $result")
+                    runOnUiThread {
+                        methodChannel?.invokeMethod("onNotification", result)
+                    }
+                }
             }
         }
     }
@@ -88,6 +97,7 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         val filter = IntentFilter().apply {
             addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
             addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
+            addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
         }
         registerReceiver(serviceStateReceiver, filter)
         Timber.d("📡 Registered broadcast receiver for service updates")

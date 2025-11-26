@@ -14,7 +14,8 @@ class _LockControlScreenState extends State<LockControlScreen> {
   bool _isConnected = false;
   bool _isConnecting = false;
   bool _keepConnection = true;
-  bool _autoModeEnabled = false; // Single switch: auto-connect + auto-actions
+  bool _autoModeEnabled = false; // Auto-connect: keeps background service running
+  bool _smartActionsEnabled = false; // Smart actions: auto open/close based on state
   String _lockState = "Unknown"; // Current lock state
   final List<String> _messages = [];
 
@@ -223,11 +224,12 @@ class _LockControlScreenState extends State<LockControlScreen> {
         serialNumber: _serialNumberController.text,
         deviceId: _deviceIdController.text,
         name: _nameController.text,
-        enableAutoActions: true, // Always enable auto-actions in Auto Mode
+        enableAutoActions: _smartActionsEnabled,
       );
       setState(() {
         _autoModeEnabled = true;
-        _messages.insert(0, '🤖 Auto Mode started - Auto-connect + Actions enabled');
+        final actionsStatus = _smartActionsEnabled ? 'Smart Actions ON' : 'Smart Actions OFF';
+        _messages.insert(0, '🤖 Auto Mode started - $actionsStatus');
       });
     } catch (e) {
       setState(() {
@@ -241,6 +243,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
       await _lockService.stopBackgroundService();
       setState(() {
         _autoModeEnabled = false;
+        _smartActionsEnabled = false; // Reset smart actions when stopping
         _messages.insert(0, '⏹️ Auto Mode stopped');
       });
     } catch (e) {
@@ -292,29 +295,64 @@ class _LockControlScreenState extends State<LockControlScreen> {
                       color: _autoModeEnabled ? Colors.deepPurple[50] : null,
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: SwitchListTile(
-                          title: const Text(
-                            '🤖 Auto Mode',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        child: Column(
+                          children: [
+                            SwitchListTile(
+                              title: const Text(
+                                '🤖 Auto Mode',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _autoModeEnabled
+                                    ? 'Status: $_lockState'
+                                    : 'Keep connection alive in background',
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              value: _autoModeEnabled,
+                              onChanged: (value) async {
+                                if (value) {
+                                  await _startAutoMode();
+                                } else {
+                                  await _stopAutoMode();
+                                }
+                              },
+                              activeColor: Colors.deepPurple,
                             ),
-                          ),
-                          subtitle: Text(
-                            _autoModeEnabled
-                                ? 'Status: $_lockState\n🔒 CLOSED → OPEN  |  🔓 OPEN → PULL + CLOSE'
-                                : 'Enable auto-connect and smart actions',
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                          value: _autoModeEnabled,
-                          onChanged: (value) async {
-                            if (value) {
-                              await _startAutoMode();
-                            } else {
-                              await _stopAutoMode();
-                            }
-                          },
-                          activeColor: Colors.deepPurple,
+                            if (_autoModeEnabled) ...[
+                              const Divider(),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: SwitchListTile(
+                                  title: const Text(
+                                    '⚡ Smart Actions',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    _smartActionsEnabled
+                                        ? '🔒 CLOSED → OPEN  |  🔓 OPEN → PULL + CLOSE'
+                                        : 'Manual control only',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  value: _smartActionsEnabled,
+                                  onChanged: (value) async {
+                                    setState(() {
+                                      _smartActionsEnabled = value;
+                                    });
+                                    // Restart service with new setting
+                                    await _stopAutoMode();
+                                    await _startAutoMode();
+                                  },
+                                  activeColor: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ),

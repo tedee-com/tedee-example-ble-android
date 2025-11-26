@@ -207,10 +207,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         _stopOperationAnimation();
         _updateCirclePosition(0.5); // Center
       }
-      // LOCK_SPRING_PULL state: RIGHT + show animation (counterclockwise)
+      // LOCK_SPRING_PULL state: RIGHT + show animation (clockwise)
       else if (stateLower.contains('lock_spring_pull') || stateLower.contains('spring_pull')) {
         _addLog('🟢 Circle → RIGHT (lock_spring_pull - spring pull)');
-        _rotateClockwise = false; // Counterclockwise for pull spring
+        _rotateClockwise = true; // Clockwise for pull spring
         _startOperationAnimation();
         _updateCirclePosition(1.0); // Right
       }
@@ -354,8 +354,8 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     // From UNLOCKED (center) → swipe RIGHT to PULL SPRING
     else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
       _addLog('🔧 Swipe RIGHT from UNLOCKED → Pull spring');
-      // Move circle to RIGHT immediately (counterclockwise rotation for pull spring)
-      _rotateClockwise = false;
+      // Move circle to RIGHT immediately (clockwise rotation for pull spring)
+      _rotateClockwise = true;
       _startOperationAnimation();
       _updateCirclePosition(1.0);
       await _lockService.pullSpring();
@@ -429,11 +429,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
-      body: Column(
-        children: [
-          // Main UI with circle
-          Expanded(
-            child: AnimatedContainer(
+      body: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -450,7 +446,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             // Main draggable circle
             Positioned(
               left: circleLeft,
-              top: screenHeight / 2 - (circleDiameter / 2),
+              top: screenHeight * 0.7 - (circleDiameter / 2),
               child: GestureDetector(
                 onPanStart: _onPanStart,
                 onPanUpdate: (details) => _onPanUpdate(details, screenWidth),
@@ -491,7 +487,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                 _lockState.toLowerCase().contains('spring_pull'))
               Positioned(
                 left: circleLeft,
-                top: screenHeight / 2 - (circleDiameter / 2),
+                top: screenHeight * 0.7 - (circleDiameter / 2),
                 child: SizedBox(
                   width: circleDiameter,
                   height: circleDiameter,
@@ -524,7 +520,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             if (_isConnected && _lockState.toLowerCase() == 'unlocked' && !_isDragging)
               Positioned(
                 left: screenWidth / 2 - 80,
-                top: screenHeight / 2 - 80,
+                top: screenHeight * 0.7 - 80,
                 child: Container(
                   width: 160,
                   height: 160,
@@ -537,30 +533,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                   ),
                 ),
               ),
-
-            // DEBUG: Current state indicator (top center)
-            Positioned(
-              top: 50,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'State: $_lockState',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
 
             // Button to access advanced controls (bottom right)
             Positioned(
@@ -585,82 +557,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             ),
           ],
         ),
-      ),
-    ),
-
-          // Log viewer at bottom
-          Container(
-            height: 150,
-            color: Colors.black87,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  color: Colors.grey[900],
-                  child: Row(
-                    children: [
-                      const Icon(Icons.terminal, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Debug Log',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'Connected: ${_isConnected ? "✅" : "❌"} | State: $_lockState',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: _logs.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No logs yet',
-                            style: TextStyle(color: Colors.grey, fontSize: 11),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: _logs.length,
-                          itemBuilder: (context, index) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Colors.grey[800]!,
-                                    width: 0.5,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                _logs[index],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'monospace',
-                                  fontSize: 10,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -165,37 +165,52 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       return;
     }
 
-    // Start or stop the operation animation based on lock state
-    if (_isLockOperating()) {
-      _startOperationAnimation();
-    } else {
-      _stopOperationAnimation();
-    }
-
     // Map lock states to circle positions
     final stateLower = _lockState.toLowerCase();
 
-    // LOCKED states: "locked", "locking", "lock_closed", "closed"
-    if ((stateLower.contains('locked') || stateLower.contains('closed')) &&
-        !stateLower.contains('unlocked') &&
-        !stateLower.contains('open')) {
-      _addLog('🔴 Circle → LEFT (locked/closed)');
+    // LOCKING state (in progress): stay LEFT + show animation
+    if (stateLower == 'locking') {
+      _addLog('🔴 Circle → LEFT (locking - operation in progress)');
+      _startOperationAnimation();
       _updateCirclePosition(0.0); // Left
     }
-    // UNLOCKED states: "unlocked", "unlocking", "lock_opened", "lock_open", "open"
+    // LOCKED state (final): LEFT, no animation
+    else if ((stateLower.contains('locked') || stateLower.contains('closed')) &&
+        !stateLower.contains('unlocked') &&
+        !stateLower.contains('open')) {
+      _addLog('🔴 Circle → LEFT (locked/closed - final)');
+      _stopOperationAnimation();
+      _updateCirclePosition(0.0); // Left
+    }
+    // UNLOCKING state (in progress): stay RIGHT + show animation
+    else if (stateLower == 'unlocking') {
+      _addLog('🟡 Circle → RIGHT (unlocking - operation in progress)');
+      _startOperationAnimation();
+      _updateCirclePosition(1.0); // Right
+    }
+    // UNLOCKED state (final): CENTER, no animation
     else if (stateLower.contains('unlocked') ||
              stateLower.contains('open')) {
-      _addLog('🟡 Circle → CENTER (unlocked/open)');
+      _addLog('🟡 Circle → CENTER (unlocked/open - final)');
+      _stopOperationAnimation();
       _updateCirclePosition(0.5); // Center
     }
-    // PULL SPRING states: "pull", "spring", "pulling"
+    // PULLING state (in progress): show animation
+    else if (stateLower == 'pulling') {
+      _addLog('🟢 Circle → RIGHT (pulling - operation in progress)');
+      _startOperationAnimation();
+      _updateCirclePosition(1.0); // Right
+    }
+    // PULL SPRING state (final): RIGHT, no animation
     else if (stateLower.contains('pull') || stateLower.contains('spring')) {
-      _addLog('🟢 Circle → RIGHT (pull spring)');
+      _addLog('🟢 Circle → RIGHT (pull spring - final)');
+      _stopOperationAnimation();
       _updateCirclePosition(1.0); // Right
     }
     // Unknown state - stay center
     else {
       _addLog('⚫ Circle → CENTER (unknown: "$_lockState")');
+      _stopOperationAnimation();
       _updateCirclePosition(0.5); // Center for unknown
     }
   }
@@ -433,7 +448,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             ),
 
             // Operation indicator: spinning dot around the circle
-            if (_isLockOperating() && !_isDragging)
+            if (stateLower == 'locking' || stateLower == 'unlocking' || stateLower == 'pulling')
               Positioned(
                 left: circleLeft,
                 top: screenHeight / 2 - (circleDiameter / 2),
@@ -445,17 +460,17 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: Container(
-                        width: 10,
-                        height: 10,
-                        margin: const EdgeInsets.only(top: 8), // Distance from circle edge
+                        width: 16, // Increased size for better visibility
+                        height: 16,
+                        margin: const EdgeInsets.only(top: 4), // Closer to circle edge
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.yellow, // Bright yellow for visibility
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white.withOpacity(0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
+                              color: Colors.yellow.withOpacity(0.8),
+                              blurRadius: 12,
+                              spreadRadius: 3,
                             ),
                           ],
                         ),

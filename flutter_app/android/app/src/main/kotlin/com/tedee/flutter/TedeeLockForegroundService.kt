@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import tedee.mobile.sdk.ble.bluetooth.ILockConnectionListener
 import tedee.mobile.sdk.ble.bluetooth.LockConnectionManager
 import tedee.mobile.sdk.ble.extentions.getReadableLockState
+import tedee.mobile.sdk.ble.extentions.getReadableLockStatusResult
+import tedee.mobile.sdk.ble.extentions.getReadableLockCommandResult
 import tedee.mobile.sdk.ble.extentions.print
 import tedee.mobile.sdk.ble.model.DeviceCertificate
 import timber.log.Timber

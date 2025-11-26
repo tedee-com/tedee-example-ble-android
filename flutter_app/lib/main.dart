@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/lock_control_screen.dart';
+import 'screens/simple_lock_screen.dart';
 
 void main() {
   runApp(const TedeeFlutterApp());
@@ -16,7 +16,7 @@ class TedeeFlutterApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const LockControlScreen(),
+      home: const SimpleLockScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

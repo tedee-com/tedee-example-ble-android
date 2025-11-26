@@ -9,7 +9,7 @@ class SimpleLockScreen extends StatefulWidget {
   State<SimpleLockScreen> createState() => _SimpleLockScreenState();
 }
 
-class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerProviderStateMixin {
+class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProviderStateMixin {
   final TedeeLockService _lockService = TedeeLockService();
 
   bool _isConnected = false;

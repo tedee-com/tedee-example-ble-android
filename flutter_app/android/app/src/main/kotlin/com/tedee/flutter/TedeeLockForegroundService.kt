@@ -147,8 +147,22 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 }
             }
             ACTION_GET_FIRMWARE -> {
-                executeCommand("Get Firmware") {
-                    lockConnectionManager.getFirmwareVersion(false)
+                // getFirmwareVersion returns FirmwareVersion object, not ByteArray, so handle separately
+                if (!isConnected) {
+                    updateNotification("Not connected - Get Firmware failed", false)
+                } else {
+                    serviceScope.launch {
+                        try {
+                            updateNotification("Getting firmware version...", true)
+                            val firmwareVersion = lockConnectionManager.getFirmwareVersion(false)
+                            val versionString = firmwareVersion?.toString() ?: "No response"
+                            Timber.d("Firmware version: $versionString")
+                            updateNotification("✅ Firmware: $versionString - $currentLockState", true)
+                        } catch (e: Exception) {
+                            Timber.e(e, "Get firmware failed")
+                            updateNotification("❌ Get Firmware failed - $currentLockState", true)
+                        }
+                    }
                 }
             }
         }

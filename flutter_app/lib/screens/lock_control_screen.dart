@@ -301,74 +301,6 @@ class _LockControlScreenState extends State<LockControlScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Configuration Section
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Lock Configuration',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _serialNumberController,
-                              decoration: const InputDecoration(
-                                labelText: 'Serial Number',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.tag),
-                              ),
-                              enabled: !_isConnected,
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _deviceIdController,
-                              decoration: const InputDecoration(
-                                labelText: 'Device ID',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.fingerprint),
-                              ),
-                              keyboardType: TextInputType.number,
-                              enabled: !_isConnected,
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Lock Name',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.label),
-                              ),
-                              enabled: !_isConnected,
-                            ),
-                            const SizedBox(height: 16),
-                            SwitchListTile(
-                              title: const Text('Keep Connection'),
-                              subtitle: const Text(
-                                'Maintain indefinite connection to lock',
-                              ),
-                              value: _keepConnection,
-                              onChanged: _isConnected
-                                  ? null
-                                  : (value) {
-                                      setState(() {
-                                        _keepConnection = value;
-                                      });
-                                    },
-                              activeColor: const Color(0xFF22345a),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
                     // Connection Status & Controls
                     Card(
                       color: _isConnected ? Colors.green[50] : Colors.grey[100],
@@ -588,6 +520,74 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                   padding: const EdgeInsets.all(16),
                                 ),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Configuration Section
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Lock Configuration',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _serialNumberController,
+                              decoration: const InputDecoration(
+                                labelText: 'Serial Number',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.tag),
+                              ),
+                              enabled: !_isConnected && !_autoModeEnabled,
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _deviceIdController,
+                              decoration: const InputDecoration(
+                                labelText: 'Device ID',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.fingerprint),
+                              ),
+                              keyboardType: TextInputType.number,
+                              enabled: !_isConnected && !_autoModeEnabled,
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _nameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Lock Name',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.label),
+                              ),
+                              enabled: !_isConnected && !_autoModeEnabled,
+                            ),
+                            const SizedBox(height: 16),
+                            SwitchListTile(
+                              title: const Text('Keep Connection'),
+                              subtitle: const Text(
+                                'Maintain indefinite connection to lock',
+                              ),
+                              value: _keepConnection,
+                              onChanged: (_isConnected || _autoModeEnabled)
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        _keepConnection = value;
+                                      });
+                                    },
+                              activeColor: const Color(0xFF22345a),
                             ),
                           ],
                         ),

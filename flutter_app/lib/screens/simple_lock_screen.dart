@@ -78,12 +78,19 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
 
   Future<void> _restoreState() async {
     try {
+      print('🔄 Checking background service status...'); // Debug
       final isRunning = await _lockService.isBackgroundServiceRunning();
+      print('🔄 Background service running: $isRunning'); // Debug
+
       if (isRunning) {
+        print('🔄 Requesting state sync from service...'); // Debug
         await _lockService.requestStateSync();
+        print('🔄 State sync requested'); // Debug
+      } else {
+        print('⚠️ Background service not running - state may not sync'); // Debug
       }
     } catch (e) {
-      // Ignore errors during state restoration
+      print('❌ Error during state restoration: $e'); // Debug
     }
   }
 
@@ -343,16 +350,17 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
               bottom: 32,
               right: 32,
               child: FloatingActionButton(
-                onPressed: () {
+                onPressed: () async {
                   print('⚙️ Settings button pressed - navigating to advanced controls'); // Debug
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const LockControlScreen(),
                     ),
-                  ).then((value) {
-                    print('⚙️ Returned from advanced controls'); // Debug
-                  });
+                  );
+                  print('⚙️ Returned from advanced controls - refreshing state'); // Debug
+                  // Refresh state when returning from settings
+                  await _restoreState();
                 },
                 backgroundColor: Colors.white.withOpacity(0.2),
                 child: const Icon(Icons.settings, color: Colors.white),

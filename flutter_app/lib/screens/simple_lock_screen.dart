@@ -259,38 +259,44 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with SingleTickerPr
   }
 
   Future<void> _handleSwipeRight() async {
-    switch (_lockState.toLowerCase()) {
-      case 'locked':
-      case 'locking':
-        // From locked (left) → swipe right to unlock
-        await _lockService.openLock();
-        break;
-      case 'unlocked':
-      case 'unlocking':
-        // From unlocked (center) → swipe right to pull spring
-        await _lockService.pullSpring();
-        break;
-      default:
-        // Snap back
-        _updateCirclePosition(_targetCirclePosition);
+    final stateLower = _lockState.toLowerCase();
+
+    // From LOCKED (left) → swipe RIGHT to UNLOCK
+    if ((stateLower.contains('locked') || stateLower.contains('closed')) &&
+        !stateLower.contains('unlocked') &&
+        !stateLower.contains('open')) {
+      _addLog('🔓 Swipe RIGHT from LOCKED → Opening lock');
+      await _lockService.openLock();
+    }
+    // From UNLOCKED (center) → swipe RIGHT to PULL SPRING
+    else if (stateLower.contains('unlocked') || stateLower.contains('open')) {
+      _addLog('🔧 Swipe RIGHT from UNLOCKED → Pull spring');
+      await _lockService.pullSpring();
+    }
+    else {
+      // Unknown state - snap back
+      _addLog('⚠️ Swipe RIGHT from unknown state "$_lockState" - ignoring');
+      _updateCirclePosition(_targetCirclePosition);
     }
   }
 
   Future<void> _handleSwipeLeft() async {
-    switch (_lockState.toLowerCase()) {
-      case 'unlocked':
-      case 'unlocking':
-        // From unlocked (center) → swipe left to lock
-        await _lockService.closeLock();
-        break;
-      case 'pull_spring':
-      case 'pulling':
-        // From pull spring (right) → swipe left to lock
-        await _lockService.closeLock();
-        break;
-      default:
-        // Snap back
-        _updateCirclePosition(_targetCirclePosition);
+    final stateLower = _lockState.toLowerCase();
+
+    // From UNLOCKED (center) → swipe LEFT to LOCK
+    if (stateLower.contains('unlocked') || stateLower.contains('open')) {
+      _addLog('🔒 Swipe LEFT from UNLOCKED → Closing lock');
+      await _lockService.closeLock();
+    }
+    // From PULL SPRING (right) → swipe LEFT to LOCK
+    else if (stateLower.contains('pull') || stateLower.contains('spring')) {
+      _addLog('🔒 Swipe LEFT from PULL SPRING → Closing lock');
+      await _lockService.closeLock();
+    }
+    else {
+      // Unknown state or already locked - snap back
+      _addLog('⚠️ Swipe LEFT from state "$_lockState" - ignoring');
+      _updateCirclePosition(_targetCirclePosition);
     }
   }
 

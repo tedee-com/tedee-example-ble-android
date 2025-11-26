@@ -448,7 +448,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
             ),
 
             // Operation indicator: spinning dot around the circle
-            if (stateLower == 'locking' || stateLower == 'unlocking' || stateLower == 'pulling')
+            if (_lockState.toLowerCase() == 'locking' ||
+                _lockState.toLowerCase() == 'unlocking' ||
+                _lockState.toLowerCase() == 'pulling')
               Positioned(
                 left: circleLeft,
                 top: screenHeight / 2 - (circleDiameter / 2),

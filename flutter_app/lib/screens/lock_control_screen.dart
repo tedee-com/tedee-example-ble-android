@@ -58,8 +58,11 @@ class _LockControlScreenState extends State<LockControlScreen> {
       });
     });
 
-    // Check if background service is running and restore Auto Mode state
-    _restoreAutoModeState();
+    // Defer state restoration until after first frame is rendered
+    // This prevents blocking the splash screen transition
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreAutoModeState();
+    });
   }
 
   Future<void> _restoreAutoModeState() async {

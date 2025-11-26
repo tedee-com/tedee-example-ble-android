@@ -161,6 +161,16 @@ class TedeeLockService {
     }
   }
 
+  /// Check if background service is running
+  Future<bool> isBackgroundServiceRunning() async {
+    try {
+      final bool result = await _channel.invokeMethod('isBackgroundServiceRunning');
+      return result;
+    } on PlatformException catch (e) {
+      return false; // Assume not running if error
+    }
+  }
+
   // Callback functions
   Function(String)? _notificationListener;
   Function(bool)? _connectionStateListener;

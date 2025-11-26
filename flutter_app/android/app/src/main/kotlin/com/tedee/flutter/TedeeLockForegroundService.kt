@@ -37,6 +37,7 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
         const val ACTION_START_SERVICE = "com.tedee.flutter.START_SERVICE"
         const val ACTION_STOP_SERVICE = "com.tedee.flutter.STOP_SERVICE"
+        const val ACTION_SYNC_STATE = "com.tedee.flutter.SYNC_STATE"
         const val ACTION_OPEN_LOCK = "com.tedee.flutter.OPEN_LOCK"
         const val ACTION_CLOSE_LOCK = "com.tedee.flutter.CLOSE_LOCK"
         const val ACTION_PULL_SPRING = "com.tedee.flutter.PULL_SPRING"
@@ -124,6 +125,14 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
             }
             ACTION_STOP_SERVICE -> {
                 stopSelf()
+            }
+            ACTION_SYNC_STATE -> {
+                // Broadcast current state to sync with app UI
+                Timber.d("📡 Sync state requested - broadcasting current state")
+                broadcastConnectionState(isConnected)
+                if (isConnected) {
+                    broadcastLockState(currentLockState)
+                }
             }
             ACTION_OPEN_LOCK -> {
                 executeCommand("Open") {

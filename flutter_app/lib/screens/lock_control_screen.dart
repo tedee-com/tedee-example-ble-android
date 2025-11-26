@@ -57,6 +57,23 @@ class _LockControlScreenState extends State<LockControlScreen> {
         _lockState = lockState;
       });
     });
+
+    // Check if background service is running and restore Auto Mode state
+    _restoreAutoModeState();
+  }
+
+  Future<void> _restoreAutoModeState() async {
+    try {
+      final isRunning = await _lockService.isBackgroundServiceRunning();
+      if (isRunning) {
+        setState(() {
+          _autoModeEnabled = true;
+          _messages.insert(0, '🔄 Auto Mode restored from background service');
+        });
+      }
+    } catch (e) {
+      // Ignore errors during state restoration
+    }
   }
 
   @override

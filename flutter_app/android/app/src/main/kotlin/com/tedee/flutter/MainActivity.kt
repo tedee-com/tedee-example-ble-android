@@ -382,6 +382,10 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                     startService(serviceIntent)
                     result.success(null)
                 }
+                "isBackgroundServiceRunning" -> {
+                    val isRunning = isBackgroundServiceRunning()
+                    result.success(isRunning)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -401,6 +405,15 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
                 registerReceiver(serviceStateReceiver, filter)
                 isReceiverRegistered = true
                 Timber.d("📡 Registered broadcast receiver in onResume()")
+
+                // If service is running, request current state to sync UI
+                if (isBackgroundServiceRunning()) {
+                    Timber.d("📡 Service is running - requesting state sync")
+                    val syncIntent = Intent(this, TedeeLockForegroundService::class.java).apply {
+                        action = TedeeLockForegroundService.ACTION_SYNC_STATE
+                    }
+                    startService(syncIntent)
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to register receiver")
             }

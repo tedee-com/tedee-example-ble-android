@@ -458,20 +458,31 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 }
             }
             LOCK_STATE_UNLOCKED -> {
-                // Lock is OPEN → AUTO PULL SPRING
-                Timber.i("🔃 AUTO-ACTION: Lock is OPEN, pulling spring automatically...")
-                updateNotification("🔃 AUTO: Pulling spring...", true)
+                // Lock is OPEN → AUTO PULL SPRING + CLOSE
+                Timber.i("🔃 AUTO-ACTION: Lock is OPEN, executing PULL SPRING + CLOSE sequence...")
+                updateNotification("🔃 AUTO: Pull spring + Close...", true)
 
                 serviceScope.launch {
                     try {
-                        val result = lockConnectionManager.sendCommand(0x52.toByte(), null)
-                        Timber.d("Auto-pull spring result: ${result?.print()}")
-                        updateNotification("✅ AUTO: Spring pulled", true)
+                        // Step 1: Pull spring
+                        Timber.d("Step 1/2: Pulling spring...")
+                        val pullResult = lockConnectionManager.sendCommand(0x52.toByte(), null)
+                        Timber.d("Pull spring result: ${pullResult?.print()}")
+
+                        // Wait for pull spring to complete
+                        delay(2000) // 2 seconds delay between commands
+
+                        // Step 2: Close lock
+                        Timber.d("Step 2/2: Closing lock...")
+                        val closeResult = lockConnectionManager.sendCommand(0x50.toByte(), null)
+                        Timber.d("Close lock result: ${closeResult?.print()}")
+
+                        updateNotification("✅ AUTO: Pull + Close completed", true)
                         lastAutoActionTime = currentTime
                         lastProcessedState = lockState
                     } catch (e: Exception) {
-                        Timber.e(e, "Auto-pull spring failed")
-                        updateNotification("❌ AUTO: Pull spring failed - ${e.message}", true)
+                        Timber.e(e, "Auto pull+close failed")
+                        updateNotification("❌ AUTO: Pull+Close failed - ${e.message}", true)
                     }
                 }
             }

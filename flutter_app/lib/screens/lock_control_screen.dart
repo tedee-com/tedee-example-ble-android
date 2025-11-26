@@ -14,8 +14,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
   bool _isConnected = false;
   bool _isConnecting = false;
   bool _keepConnection = true;
-  bool _isBackgroundServiceRunning = false;
-  bool _autoActionsEnabled = false;
+  bool _autoModeEnabled = false; // Single switch: auto-connect + auto-actions
   final List<String> _messages = [];
 
   // Editable fields with preset values from Constants.kt
@@ -197,36 +196,35 @@ class _LockControlScreenState extends State<LockControlScreen> {
     }
   }
 
-  Future<void> _startBackgroundService() async {
+  Future<void> _startAutoMode() async {
     try {
       await _lockService.startBackgroundService(
         serialNumber: _serialNumberController.text,
         deviceId: _deviceIdController.text,
         name: _nameController.text,
-        enableAutoActions: _autoActionsEnabled,
+        enableAutoActions: true, // Always enable auto-actions in Auto Mode
       );
       setState(() {
-        _isBackgroundServiceRunning = true;
-        final autoMsg = _autoActionsEnabled ? ' with AUTO-ACTIONS 🚀' : '';
-        _messages.insert(0, '🔄 Background service started$autoMsg');
+        _autoModeEnabled = true;
+        _messages.insert(0, '🤖 Auto Mode started - Auto-connect + Actions enabled');
       });
     } catch (e) {
       setState(() {
-        _messages.insert(0, '❌ Failed to start background service: $e');
+        _messages.insert(0, '❌ Failed to start Auto Mode: $e');
       });
     }
   }
 
-  Future<void> _stopBackgroundService() async {
+  Future<void> _stopAutoMode() async {
     try {
       await _lockService.stopBackgroundService();
       setState(() {
-        _isBackgroundServiceRunning = false;
-        _messages.insert(0, '⏹️ Background service stopped');
+        _autoModeEnabled = false;
+        _messages.insert(0, '⏹️ Auto Mode stopped');
       });
     } catch (e) {
       setState(() {
-        _messages.insert(0, '❌ Failed to stop background service: $e');
+        _messages.insert(0, '❌ Failed to stop Auto Mode: $e');
       });
     }
   }
@@ -331,48 +329,22 @@ class _LockControlScreenState extends State<LockControlScreen> {
                             ),
                             const Divider(),
                             SwitchListTile(
-                              title: const Text('Background Auto-Connect'),
+                              title: const Text('🤖 Auto Mode'),
                               subtitle: Text(
-                                _isBackgroundServiceRunning
-                                    ? '🔄 Service running - Auto-connects when nearby'
-                                    : 'Start background service for auto-connect',
+                                _autoModeEnabled
+                                    ? '🔄 Active - Auto-connect + Smart Actions\n🔒 CLOSED → OPEN\n🔓 OPEN → PULL SPRING + CLOSE'
+                                    : 'Enable auto-connect and smart lock actions',
+                                style: const TextStyle(fontSize: 12),
                               ),
-                              value: _isBackgroundServiceRunning,
+                              value: _autoModeEnabled,
                               onChanged: (value) async {
                                 if (value) {
-                                  await _startBackgroundService();
+                                  await _startAutoMode();
                                 } else {
-                                  await _stopBackgroundService();
+                                  await _stopAutoMode();
                                 }
                               },
-                              activeColor: Colors.green,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
-                              child: SwitchListTile(
-                                title: const Text('🚀 Auto-Actions (Proximity)'),
-                                subtitle: Text(
-                                  _autoActionsEnabled
-                                      ? '🔓 Lock CLOSED → Auto OPEN\n🔃 Lock OPEN → Auto PULL SPRING${_isBackgroundServiceRunning ? '\n⚠️ Changing will restart service' : ''}'
-                                      : 'Enable automatic lock/unlock when nearby${_isBackgroundServiceRunning ? '\n⚠️ Changing will restart service' : '\n(Requires background service)'}',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                value: _autoActionsEnabled,
-                                onChanged: (value) async {
-                                  setState(() {
-                                    _autoActionsEnabled = value;
-                                  });
-
-                                  // If background service is running, restart it with new config
-                                  if (_isBackgroundServiceRunning) {
-                                    await _stopBackgroundService();
-                                    // Small delay to ensure clean shutdown
-                                    await Future.delayed(const Duration(milliseconds: 500));
-                                    await _startBackgroundService();
-                                  }
-                                },
-                                activeColor: Colors.orange,
-                              ),
+                              activeColor: Colors.deepPurple,
                             ),
                           ],
                         ),

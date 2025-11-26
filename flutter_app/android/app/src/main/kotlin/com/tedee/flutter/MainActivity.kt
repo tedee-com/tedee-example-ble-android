@@ -91,11 +91,9 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         // Request Bluetooth permissions
         requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
 
-        // Set up SignedTimeProvider for lock connection
-        lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(scope)
-
-        // Note: BroadcastReceiver registration happens in onResume()
-        // and unregistration in onPause() for proper lifecycle management
+        // Note: Don't initialize lockConnectionManager here to avoid conflicts
+        // with background service. It will be initialized lazily when needed.
+        // SignedTimeProvider will be set in connectToLock() method.
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -448,6 +446,9 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     ) {
         scope.launch {
             try {
+                // Initialize SignedTimeProvider for lock connection (lazy init safe here)
+                lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(scope)
+
                 // Use TedeeFlutterBridge to handle certificate generation and connection
                 tedeeFlutterBridge.connect(
                     serialNumber = serialNumber,

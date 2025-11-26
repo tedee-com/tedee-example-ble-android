@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/tedee_lock_service.dart';
 import 'lock_control_screen.dart';
@@ -32,6 +33,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
   double _dragStartX = 0.0;
   double _currentDragPosition = 0.5;
   bool _isDragging = false;
+
+  // Timer for debouncing state updates to avoid visual glitches
+  Timer? _stateUpdateDebounceTimer;
 
   // Store listener references for cleanup
   late Function(bool) _connectionListener;
@@ -165,51 +169,63 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       return;
     }
 
-    // Map lock states to circle positions
-    final stateLower = _lockState.toLowerCase();
+    // Cancel any pending debounce timer
+    _stateUpdateDebounceTimer?.cancel();
 
-    // LOCK_CLOSING state (in progress): stay LEFT + show animation
-    if (stateLower == 'lock_closing') {
-      _addLog('🔴 Circle → LEFT (lock_closing - operation in progress)');
-      _startOperationAnimation();
-      _updateCirclePosition(0.0); // Left
-    }
-    // LOCK_CLOSED state (final): LEFT, no animation
-    else if (stateLower == 'lock_closed') {
-      _addLog('🔴 Circle → LEFT (lock_closed - final)');
-      _stopOperationAnimation();
-      _updateCirclePosition(0.0); // Left
-    }
-    // LOCK_OPENING states (in progress): stay RIGHT + show animation
-    // Handles: lock_opening, lock_opening with pull, lock_opening with spring pull
-    else if (stateLower.startsWith('lock_opening')) {
-      _addLog('🟡 Circle → RIGHT (lock_opening* - operation in progress)');
-      _startOperationAnimation();
-      _updateCirclePosition(1.0); // Right
-    }
-    // LOCK_OPENED state (final): CENTER, no animation
-    else if (stateLower == 'lock_opened') {
-      _addLog('🟡 Circle → CENTER (lock_opened - final)');
-      _stopOperationAnimation();
-      _updateCirclePosition(0.5); // Center
-    }
-    // Fallback for any other states containing these keywords
-    else if (stateLower.contains('closed') && !stateLower.contains('open')) {
-      _addLog('🔴 Circle → LEFT (contains "closed")');
-      _stopOperationAnimation();
-      _updateCirclePosition(0.0); // Left
-    }
-    else if (stateLower.contains('opened') || stateLower.contains('open')) {
-      _addLog('🟡 Circle → CENTER (contains "opened"/"open")');
-      _stopOperationAnimation();
-      _updateCirclePosition(0.5); // Center
-    }
-    // Unknown state - stay center
-    else {
-      _addLog('⚫ Circle → CENTER (unknown: "$_lockState")');
-      _stopOperationAnimation();
-      _updateCirclePosition(0.5); // Center for unknown
-    }
+    // Add small delay to avoid visual glitch when circle position changes
+    _stateUpdateDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+      // Map lock states to circle positions
+      final stateLower = _lockState.toLowerCase();
+
+      // LOCK_CLOSING state (in progress): stay LEFT + show animation
+      if (stateLower == 'lock_closing') {
+        _addLog('🔴 Circle → LEFT (lock_closing - operation in progress)');
+        _startOperationAnimation();
+        _updateCirclePosition(0.0); // Left
+      }
+      // LOCK_CLOSED state (final): LEFT, no animation
+      else if (stateLower == 'lock_closed') {
+        _addLog('🔴 Circle → LEFT (lock_closed - final)');
+        _stopOperationAnimation();
+        _updateCirclePosition(0.0); // Left
+      }
+      // LOCK_OPENING states (in progress): stay RIGHT + show animation
+      // Handles: lock_opening, lock_opening with pull, lock_opening with spring pull
+      else if (stateLower.startsWith('lock_opening')) {
+        _addLog('🟡 Circle → RIGHT (lock_opening* - operation in progress)');
+        _startOperationAnimation();
+        _updateCirclePosition(1.0); // Right
+      }
+      // LOCK_OPENED state (final): CENTER, no animation
+      else if (stateLower == 'lock_opened') {
+        _addLog('🟡 Circle → CENTER (lock_opened - final)');
+        _stopOperationAnimation();
+        _updateCirclePosition(0.5); // Center
+      }
+      // LOCK_SPRING_PULL state: RIGHT + show animation
+      else if (stateLower.contains('lock_spring_pull') || stateLower.contains('spring_pull')) {
+        _addLog('🟢 Circle → RIGHT (lock_spring_pull - spring pull)');
+        _startOperationAnimation();
+        _updateCirclePosition(1.0); // Right
+      }
+      // Fallback for any other states containing these keywords
+      else if (stateLower.contains('closed') && !stateLower.contains('open')) {
+        _addLog('🔴 Circle → LEFT (contains "closed")');
+        _stopOperationAnimation();
+        _updateCirclePosition(0.0); // Left
+      }
+      else if (stateLower.contains('opened') || stateLower.contains('open')) {
+        _addLog('🟡 Circle → CENTER (contains "opened"/"open")');
+        _stopOperationAnimation();
+        _updateCirclePosition(0.5); // Center
+      }
+      // Unknown state - stay center
+      else {
+        _addLog('⚫ Circle → CENTER (unknown: "$_lockState")');
+        _stopOperationAnimation();
+        _updateCirclePosition(0.5); // Center for unknown
+      }
+    });
   }
 
   void _updateCirclePosition(double position) {
@@ -359,6 +375,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
   @override
   void dispose() {
+    // Cancel debounce timer
+    _stateUpdateDebounceTimer?.cancel();
+
     // Remove listeners to prevent memory leaks
     _lockService.removeConnectionStateListener(_connectionListener);
     _lockService.removeLockStateListener(_stateListener);
@@ -446,7 +465,8 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
             // Operation indicator: spinning dot around the circle
             if (_lockState.toLowerCase() == 'lock_closing' ||
-                _lockState.toLowerCase().startsWith('lock_opening'))
+                _lockState.toLowerCase().startsWith('lock_opening') ||
+                _lockState.toLowerCase().contains('spring_pull'))
               Positioned(
                 left: circleLeft,
                 top: screenHeight / 2 - (circleDiameter / 2),

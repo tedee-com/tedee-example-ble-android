@@ -39,6 +39,12 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
         const val ACTION_CLOSE_LOCK = "com.tedee.flutter.CLOSE_LOCK"
         const val ACTION_PULL_SPRING = "com.tedee.flutter.PULL_SPRING"
 
+        // Broadcast actions for Flutter communication
+        const val BROADCAST_CONNECTION_STATE = "com.tedee.flutter.CONNECTION_STATE"
+        const val BROADCAST_LOCK_STATE = "com.tedee.flutter.LOCK_STATE"
+        const val EXTRA_IS_CONNECTED = "is_connected"
+        const val EXTRA_LOCK_STATE = "lock_state"
+
         const val EXTRA_SERIAL_NUMBER = "serial_number"
         const val EXTRA_DEVICE_ID = "device_id"
         const val EXTRA_NAME = "name"
@@ -227,6 +233,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
         Timber.i("🔔 State updated: $currentLockState ($stateHex)")
 
+        // Broadcast lock state to Flutter
+        broadcastLockState(currentLockState)
+
         // Check if we should perform auto-action
         Timber.d("Auto-actions check: enabled=$autoActionsEnabled, connected=$isConnected")
         if (autoActionsEnabled && isConnected) {
@@ -393,6 +402,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 // Reset processed state on new connection so auto-actions can trigger
                 lastProcessedState = null
 
+                // Broadcast connection state to Flutter
+                broadcastConnectionState(true)
+
                 // Start polling lock state (cylinders don't send automatic notifications)
                 Timber.i("🔄 Starting state polling for cylinder...")
                 startStatePolling()
@@ -407,11 +419,36 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 // Reset processed state on disconnect
                 lastProcessedState = null
 
+                // Broadcast disconnection to Flutter
+                broadcastConnectionState(false)
+
                 // Stop polling when disconnected
                 statePollingJob?.cancel()
                 statePollingJob = null
             }
         }
+    }
+
+    /**
+     * Broadcast connection state to MainActivity for Flutter
+     */
+    private fun broadcastConnectionState(connected: Boolean) {
+        val intent = Intent(BROADCAST_CONNECTION_STATE).apply {
+            putExtra(EXTRA_IS_CONNECTED, connected)
+        }
+        sendBroadcast(intent)
+        Timber.d("📡 Broadcast connection state: $connected")
+    }
+
+    /**
+     * Broadcast lock state to MainActivity for Flutter
+     */
+    private fun broadcastLockState(state: String) {
+        val intent = Intent(BROADCAST_LOCK_STATE).apply {
+            putExtra(EXTRA_LOCK_STATE, state)
+        }
+        sendBroadcast(intent)
+        Timber.d("📡 Broadcast lock state: $state")
     }
 
     override fun onNotification(message: ByteArray) {

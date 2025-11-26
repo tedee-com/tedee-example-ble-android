@@ -2,6 +2,8 @@ package com.tedee.flutter
 
 import android.content.Intent
 import android.content.Context
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.app.ActivityManager
 import android.graphics.Color
 import androidx.annotation.NonNull
@@ -37,6 +39,33 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     private val mobileService by lazy { MobileService() }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    // BroadcastReceiver for service state updates
+    private val serviceStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                TedeeLockForegroundService.BROADCAST_CONNECTION_STATE -> {
+                    val isConnected = intent.getBooleanExtra(
+                        TedeeLockForegroundService.EXTRA_IS_CONNECTED,
+                        false
+                    )
+                    Timber.d("📡 Received connection state broadcast: $isConnected")
+                    runOnUiThread {
+                        methodChannel?.invokeMethod("onConnectionStateChanged", isConnected)
+                    }
+                }
+                TedeeLockForegroundService.BROADCAST_LOCK_STATE -> {
+                    val lockState = intent.getStringExtra(
+                        TedeeLockForegroundService.EXTRA_LOCK_STATE
+                    ) ?: "Unknown"
+                    Timber.d("📡 Received lock state broadcast: $lockState")
+                    runOnUiThread {
+                        methodChannel?.invokeMethod("onLockStateChanged", lockState)
+                    }
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -54,6 +83,14 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
 
         // Set up SignedTimeProvider for lock connection
         lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(scope)
+
+        // Register broadcast receiver for service state updates
+        val filter = IntentFilter().apply {
+            addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
+            addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
+        }
+        registerReceiver(serviceStateReceiver, filter)
+        Timber.d("📡 Registered broadcast receiver for service updates")
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -439,6 +476,12 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     }
 
     override fun onDestroy() {
+        try {
+            unregisterReceiver(serviceStateReceiver)
+            Timber.d("📡 Unregistered broadcast receiver")
+        } catch (e: Exception) {
+            Timber.e(e, "Error unregistering receiver")
+        }
         lockConnectionManager.clear()
         super.onDestroy()
     }

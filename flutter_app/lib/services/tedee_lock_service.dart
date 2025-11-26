@@ -161,11 +161,42 @@ class TedeeLockService {
     }
   }
 
+  // Callback functions
+  Function(String)? _notificationListener;
+  Function(bool)? _connectionStateListener;
+  Function(String)? _lockStateListener;
+
   /// Set up listener for lock notifications from native side
   void setNotificationListener(Function(String) onNotification) {
+    _notificationListener = onNotification;
+    _setupMethodCallHandler();
+  }
+
+  /// Set up listener for connection state changes from background service
+  void setConnectionStateListener(Function(bool) onConnectionStateChanged) {
+    _connectionStateListener = onConnectionStateChanged;
+    _setupMethodCallHandler();
+  }
+
+  /// Set up listener for lock state changes from background service
+  void setLockStateListener(Function(String) onLockStateChanged) {
+    _lockStateListener = onLockStateChanged;
+    _setupMethodCallHandler();
+  }
+
+  /// Internal method to set up method call handler
+  void _setupMethodCallHandler() {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'onNotification') {
-        onNotification(call.arguments as String);
+      switch (call.method) {
+        case 'onNotification':
+          _notificationListener?.call(call.arguments as String);
+          break;
+        case 'onConnectionStateChanged':
+          _connectionStateListener?.call(call.arguments as bool);
+          break;
+        case 'onLockStateChanged':
+          _lockStateListener?.call(call.arguments as String);
+          break;
       }
     });
   }

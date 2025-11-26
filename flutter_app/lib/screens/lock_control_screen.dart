@@ -36,6 +36,26 @@ class _LockControlScreenState extends State<LockControlScreen> {
         _messages.insert(0, message);
       });
     });
+
+    // Listen for connection state changes from background service
+    _lockService.setConnectionStateListener((isConnected) {
+      setState(() {
+        _isConnected = isConnected;
+        if (isConnected) {
+          _messages.insert(0, '✅ Service connected securely');
+        } else {
+          _messages.insert(0, '🔌 Service disconnected');
+          _lockState = "Unknown"; // Reset state on disconnect
+        }
+      });
+    });
+
+    // Listen for lock state changes from background service
+    _lockService.setLockStateListener((lockState) {
+      setState(() {
+        _lockState = lockState;
+      });
+    });
   }
 
   @override
@@ -381,7 +401,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: (_isConnected || _autoModeEnabled) ? _openLock : null,
+                                    onPressed: _isConnected ? _openLock : null,
                                     icon: const Icon(Icons.lock_open),
                                     label: const Text('Open'),
                                     style: ElevatedButton.styleFrom(
@@ -394,7 +414,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: (_isConnected || _autoModeEnabled) ? _closeLock : null,
+                                    onPressed: _isConnected ? _closeLock : null,
                                     icon: const Icon(Icons.lock),
                                     label: const Text('Close'),
                                     style: ElevatedButton.styleFrom(
@@ -411,7 +431,7 @@ class _LockControlScreenState extends State<LockControlScreen> {
                               children: [
                                 Expanded(
                                   child: ElevatedButton.icon(
-                                    onPressed: (_isConnected || _autoModeEnabled) ? _pullSpring : null,
+                                    onPressed: _isConnected ? _pullSpring : null,
                                     icon: const Icon(
                                       Icons.settings_input_component,
                                     ),

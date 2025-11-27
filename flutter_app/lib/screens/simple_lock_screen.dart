@@ -15,9 +15,10 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
   bool _isConnected = false;
   bool _autoOpenEnabled = false; // Auto open: automatically open lock when closed
   String _lockState = "Unknown";
-  int _batteryLevel = 0; // Battery level 0-100
+  int? _batteryLevel; // Battery level 0-100 (null if not fetched yet)
   bool _isCharging = false; // Charging status
   final List<String> _logs = [];
+  Timer? _batteryUpdateTimer; // Timer for periodic battery updates
 
   // Editable fields with preset values
   final TextEditingController _serialNumberController =
@@ -141,6 +142,18 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
       // Get initial battery level
       await _updateBatteryLevel();
+
+      // Start periodic battery updates every 2 minutes when connected
+      _startBatteryUpdateTimer();
+    });
+  }
+
+  void _startBatteryUpdateTimer() {
+    _batteryUpdateTimer?.cancel();
+    _batteryUpdateTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      if (_isConnected) {
+        await _updateBatteryLevel();
+      }
     });
   }
 
@@ -447,8 +460,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
   @override
   void dispose() {
-    // Cancel debounce timer
+    // Cancel timers
     _stateUpdateDebounceTimer?.cancel();
+    _batteryUpdateTimer?.cancel();
 
     // Dispose controllers
     _serialNumberController.dispose();
@@ -486,42 +500,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       backgroundColor: _getBackgroundColor(),
       body: Stack(
         children: [
-          // Battery indicator - always visible top right
-          Positioned(
-            top: 40,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isCharging ? Icons.battery_charging_full : Icons.battery_std,
-                    size: 20,
-                    color: _batteryLevel > 20 ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$_batteryLevel%',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           // Main background with circle
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -691,55 +669,60 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Battery Level Display
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: _getBackgroundColor().withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 2,
+            // Battery Level Display - only show when battery level is available
+            if (_batteryLevel != null)
+              AnimatedOpacity(
+                opacity: _batteryLevel != null ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 500),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: _getBackgroundColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        _isCharging ? Icons.battery_charging_full : Icons.battery_std,
+                        size: 48,
+                        color: (_batteryLevel ?? 0) > 20 ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '${_batteryLevel ?? 0}%',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isCharging ? '⚡ Charging' : 'Battery Level',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                      if (_isConnected) ...[
+                        const SizedBox(height: 16),
+                        TextButton.icon(
+                          onPressed: _updateBatteryLevel,
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Refresh'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-              child: Column(
-                children: [
-                  Icon(
-                    _isCharging ? Icons.battery_charging_full : Icons.battery_std,
-                    size: 48,
-                    color: _batteryLevel > 20 ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '$_batteryLevel%',
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isCharging ? '⚡ Charging' : 'Battery Level',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                  ),
-                  if (_isConnected) ...[
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      onPressed: _updateBatteryLevel,
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Refresh'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.white.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
 
             const SizedBox(height: 24),
 

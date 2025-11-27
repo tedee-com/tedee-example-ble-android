@@ -161,17 +161,25 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
   Future<void> _updateBatteryLevel() async {
     try {
+      _addLog('🔋 Requesting battery level...');
       final result = await _lockService.getBattery();
+      _addLog('🔋 Battery result: $result');
       // Parse battery result: "🔋 Battery: 85% - ⚡ Charging"
       final batteryMatch = RegExp(r'Battery: (\d+)%').firstMatch(result);
       if (batteryMatch != null) {
+        final batteryValue = int.parse(batteryMatch.group(1)!);
+        final chargingValue = result.contains('Charging');
+        _addLog('🔋 Parsed: $batteryValue% (charging: $chargingValue)');
         setState(() {
-          _batteryLevel = int.parse(batteryMatch.group(1)!);
-          _isCharging = result.contains('Charging');
+          _batteryLevel = batteryValue;
+          _isCharging = chargingValue;
         });
+        _addLog('🔋 Battery UI updated: $_batteryLevel%');
+      } else {
+        _addLog('❌ Failed to parse battery result: $result');
       }
     } catch (e) {
-      // Ignore battery errors
+      _addLog('❌ Battery error: $e');
     }
   }
 
@@ -478,6 +486,42 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       backgroundColor: _getBackgroundColor(),
       body: Stack(
         children: [
+          // Battery indicator - always visible top right
+          Positioned(
+            top: 40,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isCharging ? Icons.battery_charging_full : Icons.battery_std,
+                    size: 20,
+                    color: _batteryLevel > 20 ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$_batteryLevel%',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Main background with circle
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -496,7 +540,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                 // Main draggable circle
                 Positioned(
                   left: circleLeft,
-                  top: screenHeight * 0.33 - (circleDiameter / 2),
+                  top: screenHeight * 0.67 - (circleDiameter / 2),
                   child: GestureDetector(
                     onPanStart: _onPanStart,
                     onPanUpdate: (details) => _onPanUpdate(details, screenWidth),
@@ -537,7 +581,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                     _lockState.toLowerCase().contains('spring_pull'))
                   Positioned(
                     left: circleLeft,
-                    top: screenHeight * 0.33 - (circleDiameter / 2),
+                    top: screenHeight * 0.67 - (circleDiameter / 2),
                     child: SizedBox(
                       width: circleDiameter,
                       height: circleDiameter,
@@ -570,7 +614,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                 if (_isConnected && _lockState.toLowerCase() == 'unlocked' && !_isDragging)
                   Positioned(
                     left: screenWidth / 2 - 80,
-                    top: screenHeight * 0.33 - 80,
+                    top: screenHeight * 0.67 - 80,
                     child: Container(
                       width: 160,
                       height: 160,

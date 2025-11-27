@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ Splash Screen API -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- Grey background color for splash screen -->
+        <item name="android:windowSplashScreenBackground">@color/launch_background_color</item>
+        <!-- Optional: Icon for splash screen (if you want to add one later) -->
+        <!-- <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item> -->
+        <item name="android:windowSplashScreenAnimationDuration">300</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

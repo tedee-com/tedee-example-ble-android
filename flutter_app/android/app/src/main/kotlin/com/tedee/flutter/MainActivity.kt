@@ -7,8 +7,10 @@ import android.content.IntentFilter
 import android.app.ActivityManager
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
 import android.Manifest
 import androidx.annotation.NonNull
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -78,7 +80,12 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         }
     }
 
-    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Install splash screen BEFORE super.onCreate() for Android 12+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            installSplashScreen()
+        }
+
         super.onCreate(savedInstanceState)
 
         // Set up RxJava error handler for BLE exceptions
@@ -90,17 +97,29 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
             }
         }
 
-        // Request Bluetooth permissions
+        // Request Bluetooth permissions first
         requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
-
-        // Request notification permission for Android 13+ (API 33+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
-        }
 
         // Note: Don't initialize lockConnectionManager here to avoid conflicts
         // with background service. It will be initialized lazily when needed.
         // SignedTimeProvider will be set in connectToLock() method.
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // After BLE permissions are handled, request notification permission
+        if (requestCode == 9 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Delay the notification permission request slightly to ensure
+            // the BLE permission dialog is fully dismissed
+            window.decorView.postDelayed({
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
+            }, 500)
+        }
     }
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {

@@ -5,15 +5,20 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.polidea.rxandroidble2.exceptions.BleException
 import io.reactivex.exceptions.UndeliverableException
 import io.reactivex.plugins.RxJavaPlugins
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tedee.mobile.demo.databinding.ActivityMainBinding
 import tedee.mobile.demo.helper.UiSetupHelper
@@ -36,6 +41,13 @@ class MainActivity : AppCompatActivity(),
   private val lockConnectionManager by lazy { LockConnectionManager(this) }
   private val uiSetupHelper: UiSetupHelper by lazy {
     UiSetupHelper(this.applicationContext, binding, lifecycleScope, this)
+  }
+  private var batteryRefreshJob: Job? = null
+  private var isConnected = false
+
+  companion object {
+    private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 9
+    private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 10
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,16 +76,24 @@ class MainActivity : AppCompatActivity(),
         throw throwable
       }
     }
-    requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
 
-    // Request notification permission for Android 13+ (API 33+)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
-    }
+    // Request permissions sequentially
+    requestPermissions(getBluetoothPermissions().toTypedArray(), BLUETOOTH_PERMISSION_REQUEST_CODE)
 
     lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(lifecycleScope, uiSetupHelper)
     uiSetupHelper.setup()
-    uiSetupHelper.setupSecureConnectClickListener(lockConnectionManager::connect)
+    uiSetupHelper.setupSecureConnectClickListener { serialNumber, deviceCertificate, keepConnection, listener ->
+      if (!hasBluetoothPermissions()) {
+        Toast.makeText(
+          this,
+          "Please grant Bluetooth permissions first",
+          Toast.LENGTH_LONG
+        ).show()
+        requestPermissions(getBluetoothPermissions().toTypedArray(), BLUETOOTH_PERMISSION_REQUEST_CODE)
+        return@setupSecureConnectClickListener
+      }
+      lockConnectionManager.connect(serialNumber, deviceCertificate, keepConnection, listener)
+    }
     uiSetupHelper.setupDisconnectClickListener(lockConnectionManager::disconnect)
     uiSetupHelper.setupSendCommandClickListener { message, params ->
       lifecycleScope.launch {
@@ -152,18 +172,27 @@ class MainActivity : AppCompatActivity(),
 
   override fun onLockConnectionChanged(isConnecting: Boolean, isConnected: Boolean) {
     Timber.w("LOCK LISTENER: secure connection changed: isConnected: $isConnected")
+    this.isConnected = isConnected
     uiSetupHelper.setCommandsSectionVisibility(false)
     uiSetupHelper.setAddingDeviceSectionVisibility(isVisible = false, isSecureConnected = true)
     when {
-      isConnecting -> uiSetupHelper.changeConnectingState("Connecting...", Color.WHITE)
+      isConnecting -> {
+        uiSetupHelper.changeConnectingState("Connecting...", Color.WHITE)
+        stopBatteryRefresh()
+      }
 
       isConnected -> {
         uiSetupHelper.changeConnectingState("Secure session established", Color.GREEN)
         uiSetupHelper.setCommandsSectionVisibility(true)
         uiSetupHelper.setAddingDeviceSectionVisibility(isVisible = true, isSecureConnected = true)
+        // Start battery refresh when connected
+        startBatteryRefresh()
       }
 
-      else -> uiSetupHelper.changeConnectingState("Disconnected", Color.RED)
+      else -> {
+        uiSetupHelper.changeConnectingState("Disconnected", Color.RED)
+        stopBatteryRefresh()
+      }
     }
   }
 
@@ -248,7 +277,98 @@ class MainActivity : AppCompatActivity(),
     }
   }
 
+  private fun hasBluetoothPermissions(): Boolean {
+    val bluetoothPermissions = getBluetoothPermissions()
+    return bluetoothPermissions.all { permission ->
+      ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    }
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    when (requestCode) {
+      BLUETOOTH_PERMISSION_REQUEST_CODE -> {
+        val allGranted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        if (allGranted) {
+          Timber.d("Bluetooth permissions granted")
+          // Request notification permission after Bluetooth permissions
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(
+              arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+              NOTIFICATION_PERMISSION_REQUEST_CODE
+            )
+          }
+        } else {
+          Timber.w("Bluetooth permissions denied")
+          Toast.makeText(
+            this,
+            "Bluetooth permissions are required for BLE communication",
+            Toast.LENGTH_LONG
+          ).show()
+        }
+      }
+      NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+        val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+          Timber.d("Notification permission granted")
+        } else {
+          Timber.w("Notification permission denied")
+        }
+      }
+    }
+  }
+
+  private fun startBatteryRefresh() {
+    // Cancel any existing job
+    batteryRefreshJob?.cancel()
+
+    // Start new refresh job
+    batteryRefreshJob = lifecycleScope.launch {
+      while (isActive && isConnected) {
+        try {
+          updateBatteryLevel()
+          delay(30000) // Refresh every 30 seconds
+        } catch (e: Exception) {
+          Timber.e(e, "Error refreshing battery")
+          delay(30000) // Continue trying even after error
+        }
+      }
+    }
+  }
+
+  private fun stopBatteryRefresh() {
+    batteryRefreshJob?.cancel()
+    batteryRefreshJob = null
+    binding.batteryLevel.visibility = android.view.View.GONE
+  }
+
+  @SuppressLint("SetTextI18n")
+  private suspend fun updateBatteryLevel() {
+    try {
+      val response = lockConnectionManager.sendCommand(0x0C.toByte(), null)
+
+      if (response != null && response.size >= 4) {
+        val batteryLevel = response[2].toInt() and 0xFF
+        val chargingStatus = response[3].toInt() and 0xFF
+        val chargingIcon = if (chargingStatus == 1) "⚡" else "🔋"
+
+        runOnUiThread {
+          binding.batteryLevel.text = "$chargingIcon Battery: $batteryLevel%"
+          binding.batteryLevel.visibility = android.view.View.VISIBLE
+        }
+        Timber.d("Battery updated: $batteryLevel% charging=$chargingStatus")
+      }
+    } catch (e: Exception) {
+      Timber.e(e, "Failed to update battery level")
+    }
+  }
+
   override fun onDestroy() {
+    stopBatteryRefresh()
     lockConnectionManager.clear()
     super.onDestroy()
   }

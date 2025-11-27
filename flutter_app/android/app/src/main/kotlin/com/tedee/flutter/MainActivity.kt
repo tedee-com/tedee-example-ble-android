@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.app.ActivityManager
 import android.graphics.Color
+import android.os.Build
+import android.Manifest
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -90,6 +92,11 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
 
         // Request Bluetooth permissions
         requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
+
+        // Request notification permission for Android 13+ (API 33+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
+        }
 
         // Note: Don't initialize lockConnectionManager here to avoid conflicts
         // with background service. It will be initialized lazily when needed.

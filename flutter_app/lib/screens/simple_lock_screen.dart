@@ -496,7 +496,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                 // Main draggable circle
                 Positioned(
                   left: circleLeft,
-                  top: screenHeight * 0.4 - (circleDiameter / 2),
+                  top: screenHeight * 0.33 - (circleDiameter / 2),
                   child: GestureDetector(
                     onPanStart: _onPanStart,
                     onPanUpdate: (details) => _onPanUpdate(details, screenWidth),
@@ -537,7 +537,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                     _lockState.toLowerCase().contains('spring_pull'))
                   Positioned(
                     left: circleLeft,
-                    top: screenHeight * 0.4 - (circleDiameter / 2),
+                    top: screenHeight * 0.33 - (circleDiameter / 2),
                     child: SizedBox(
                       width: circleDiameter,
                       height: circleDiameter,
@@ -570,7 +570,7 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                 if (_isConnected && _lockState.toLowerCase() == 'unlocked' && !_isDragging)
                   Positioned(
                     left: screenWidth / 2 - 80,
-                    top: screenHeight * 0.4 - 80,
+                    top: screenHeight * 0.33 - 80,
                     child: Container(
                       width: 160,
                       height: 160,

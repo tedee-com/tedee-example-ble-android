@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.polidea.rxandroidble2.exceptions.BleException
 import io.reactivex.exceptions.UndeliverableException
@@ -51,8 +52,9 @@ class MainActivity : AppCompatActivity(),
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    // Switch from splash theme to normal theme BEFORE super.onCreate()
-    setTheme(R.style.Theme_TedeeDemo_NoActionBar)
+    // Install splash screen BEFORE super.onCreate() (required for Android 12+)
+    installSplashScreen()
+
     super.onCreate(savedInstanceState)
 
     Timber.d("MainActivity onCreate started")

@@ -11,6 +11,7 @@
         android:name="android.permission.ACCESS_COARSE_LOCATION"
         tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ExampleApplication"
@@ -25,7 +26,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TedeeDemo.NoActionBar">
+            android:theme="@style/Theme.TedeeDemo.SplashScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

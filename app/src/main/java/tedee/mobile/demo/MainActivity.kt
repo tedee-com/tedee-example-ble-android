@@ -1,8 +1,12 @@
 package tedee.mobile.demo
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -36,8 +40,23 @@ class MainActivity : AppCompatActivity(),
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // Switch from splash theme to normal theme
+    setTheme(R.style.Theme_TedeeDemo_NoActionBar)
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
+
+    // Check if Bluetooth is enabled
+    val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
+    val bluetoothAdapter = bluetoothManager?.adapter
+    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
+      Toast.makeText(
+        this,
+        "Bluetooth is disabled. Please enable Bluetooth to use this app.",
+        Toast.LENGTH_LONG
+      ).show()
+      Timber.w("Bluetooth is disabled or not available")
+    }
+
     RxJavaPlugins.setErrorHandler { throwable ->
       if (throwable is UndeliverableException && throwable.cause is BleException) {
         return@setErrorHandler // ignore BleExceptions since we do not have subscriber
@@ -46,6 +65,12 @@ class MainActivity : AppCompatActivity(),
       }
     }
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
+
+    // Request notification permission for Android 13+ (API 33+)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 10)
+    }
+
     lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(lifecycleScope, uiSetupHelper)
     uiSetupHelper.setup()
     uiSetupHelper.setupSecureConnectClickListener(lockConnectionManager::connect)

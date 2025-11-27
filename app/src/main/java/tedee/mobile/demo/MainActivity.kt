@@ -51,11 +51,14 @@ class MainActivity : AppCompatActivity(),
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    // Switch from splash theme to normal theme
+    // Switch from splash theme to normal theme BEFORE super.onCreate()
     setTheme(R.style.Theme_TedeeDemo_NoActionBar)
+    super.onCreate(savedInstanceState)
+
+    Timber.d("MainActivity onCreate started")
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
+    Timber.d("Content view set successfully")
 
     // Check if Bluetooth is enabled
     val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
@@ -67,6 +70,8 @@ class MainActivity : AppCompatActivity(),
         Toast.LENGTH_LONG
       ).show()
       Timber.w("Bluetooth is disabled or not available")
+    } else {
+      Timber.d("Bluetooth is enabled and available")
     }
 
     RxJavaPlugins.setErrorHandler { throwable ->
@@ -78,7 +83,12 @@ class MainActivity : AppCompatActivity(),
     }
 
     // Request permissions sequentially
-    requestPermissions(getBluetoothPermissions().toTypedArray(), BLUETOOTH_PERMISSION_REQUEST_CODE)
+    if (!hasBluetoothPermissions()) {
+      requestPermissions(getBluetoothPermissions().toTypedArray(), BLUETOOTH_PERMISSION_REQUEST_CODE)
+    } else {
+      // If Bluetooth permissions already granted, request notification permission
+      requestNotificationPermissionIfNeeded()
+    }
 
     lockConnectionManager.signedDateTimeProvider = SignedTimeProvider(lifecycleScope, uiSetupHelper)
     uiSetupHelper.setup()
@@ -168,6 +178,8 @@ class MainActivity : AppCompatActivity(),
       startActivity(intent)
       finish()
     }
+
+    Timber.d("MainActivity onCreate completed successfully")
   }
 
   override fun onLockConnectionChanged(isConnecting: Boolean, isConnected: Boolean) {
@@ -284,6 +296,15 @@ class MainActivity : AppCompatActivity(),
     }
   }
 
+  private fun requestNotificationPermissionIfNeeded() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      val notificationPermission = Manifest.permission.POST_NOTIFICATIONS
+      if (ContextCompat.checkSelfPermission(this, notificationPermission) != PackageManager.PERMISSION_GRANTED) {
+        requestPermissions(arrayOf(notificationPermission), NOTIFICATION_PERMISSION_REQUEST_CODE)
+      }
+    }
+  }
+
   override fun onRequestPermissionsResult(
     requestCode: Int,
     permissions: Array<out String>,
@@ -296,12 +317,7 @@ class MainActivity : AppCompatActivity(),
         if (allGranted) {
           Timber.d("Bluetooth permissions granted")
           // Request notification permission after Bluetooth permissions
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(
-              arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-              NOTIFICATION_PERMISSION_REQUEST_CODE
-            )
-          }
+          requestNotificationPermissionIfNeeded()
         } else {
           Timber.w("Bluetooth permissions denied")
           Toast.makeText(
@@ -323,20 +339,30 @@ class MainActivity : AppCompatActivity(),
   }
 
   private fun startBatteryRefresh() {
+    Timber.d("Starting battery refresh")
     // Cancel any existing job
     batteryRefreshJob?.cancel()
 
     // Start new refresh job
     batteryRefreshJob = lifecycleScope.launch {
+      // First update immediately
+      try {
+        updateBatteryLevel()
+      } catch (e: Exception) {
+        Timber.e(e, "Error in initial battery update")
+      }
+
+      // Then continue updating every 30 seconds
       while (isActive && isConnected) {
         try {
+          delay(30000) // Wait 30 seconds
           updateBatteryLevel()
-          delay(30000) // Refresh every 30 seconds
         } catch (e: Exception) {
           Timber.e(e, "Error refreshing battery")
           delay(30000) // Continue trying even after error
         }
       }
+      Timber.d("Battery refresh loop ended")
     }
   }
 
@@ -349,21 +375,26 @@ class MainActivity : AppCompatActivity(),
   @SuppressLint("SetTextI18n")
   private suspend fun updateBatteryLevel() {
     try {
+      Timber.d("Requesting battery level...")
       val response = lockConnectionManager.sendCommand(0x0C.toByte(), null)
+
+      Timber.d("Battery response: ${response?.print() ?: "null"}, size: ${response?.size ?: 0}")
 
       if (response != null && response.size >= 4) {
         val batteryLevel = response[2].toInt() and 0xFF
         val chargingStatus = response[3].toInt() and 0xFF
         val chargingIcon = if (chargingStatus == 1) "⚡" else "🔋"
 
-        runOnUiThread {
-          binding.batteryLevel.text = "$chargingIcon Battery: $batteryLevel%"
-          binding.batteryLevel.visibility = android.view.View.VISIBLE
-        }
-        Timber.d("Battery updated: $batteryLevel% charging=$chargingStatus")
+        // lifecycleScope already runs on main thread, no need for runOnUiThread
+        binding.batteryLevel.text = "$chargingIcon Battery: $batteryLevel%"
+        binding.batteryLevel.visibility = android.view.View.VISIBLE
+        Timber.d("Battery updated successfully: $batteryLevel% charging=$chargingStatus")
+      } else {
+        Timber.w("Battery response is null or too short: ${response?.size ?: 0} bytes")
       }
     } catch (e: Exception) {
       Timber.e(e, "Failed to update battery level")
+      // Don't show battery if there's an error, keep it hidden
     }
   }
 

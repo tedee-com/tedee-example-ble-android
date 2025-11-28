@@ -23,15 +23,11 @@
         android:theme="@style/Theme.TedeeDemo">
         <activity
             android:name=".MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.TedeeDemo.SplashScreen">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            <!-- LAUNCHER disabled - use flutter_app instead -->
         </activity>
 
         <activity

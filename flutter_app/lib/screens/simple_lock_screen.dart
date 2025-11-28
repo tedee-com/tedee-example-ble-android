@@ -145,17 +145,22 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         _addLog('❌ Failed to restore state: $e');
       });
 
-      // IMPORTANT: Don't auto-start service here!
-      // Android 12+ blocks foreground service start from onCreate/onStart
-      // The service will be started only when user explicitly clicks "Start" button
-      _lockService.isBackgroundServiceRunning().then((isRunning) {
-        if (isRunning) {
-          _addLog('✅ Service already running');
-        } else {
-          _addLog('ℹ️ Service stopped - use controls to start');
+      // CRITICAL: Wait 2 seconds before checking/starting service
+      // This ensures the app is fully in foreground for Android 12+
+      // Android blocks foreground service start immediately in onCreate/onStart,
+      // but allows it after the app is visibly running for a short time
+      Future.delayed(const Duration(seconds: 2), () async {
+        try {
+          final isRunning = await _lockService.isBackgroundServiceRunning();
+          if (isRunning) {
+            _addLog('✅ Service already running');
+          } else {
+            _addLog('🤖 Auto-starting service...');
+            await _startService();
+          }
+        } catch (e) {
+          _addLog('❌ Failed to start service: $e');
         }
-      }).catchError((e) {
-        _addLog('❌ Failed to check service status: $e');
       });
 
       // Get initial battery level only if connected (non-blocking)

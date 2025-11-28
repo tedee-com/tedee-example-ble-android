@@ -130,22 +130,43 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     _lockService.setNotificationListener(_notificationListener);
 
     // Auto-start service (always on)
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _restoreState();
+    // IMPORTANT: Don't await these operations to avoid blocking the UI
+    // They will run in background and update the state when ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAppStateInBackground();
+    });
+  }
 
-      // Start service if not already running (Auto Mode is always on)
-      final isRunning = await _lockService.isBackgroundServiceRunning();
-      if (!isRunning) {
-        _addLog('🤖 Starting service...');
-        await _startService();
-      }
+  /// Initialize app state in background without blocking UI
+  Future<void> _initializeAppStateInBackground() async {
+    try {
+      // Restore previous state (non-blocking)
+      _restoreState().catchError((e) {
+        _addLog('❌ Failed to restore state: $e');
+      });
 
-      // Get initial battery level
-      await _updateBatteryLevel();
+      // Check and start service if needed (non-blocking)
+      _lockService.isBackgroundServiceRunning().then((isRunning) {
+        if (!isRunning) {
+          _addLog('🤖 Starting service...');
+          _startService().catchError((e) {
+            _addLog('❌ Failed to start service: $e');
+          });
+        }
+      }).catchError((e) {
+        _addLog('❌ Failed to check service status: $e');
+      });
+
+      // Get initial battery level (non-blocking)
+      _updateBatteryLevel().catchError((e) {
+        _addLog('❌ Failed to update battery: $e');
+      });
 
       // Start periodic battery updates every 2 minutes when connected
       _startBatteryUpdateTimer();
-    });
+    } catch (e) {
+      _addLog('❌ Initialization error: $e');
+    }
   }
 
   void _startBatteryUpdateTimer() {

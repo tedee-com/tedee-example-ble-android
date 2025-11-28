@@ -127,11 +127,17 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                 stopSelf()
             }
             ACTION_SYNC_STATE -> {
-                // Broadcast current state to sync with app UI
-                Timber.d("📡 Sync state requested - broadcasting current state")
-                broadcastConnectionState(isConnected)
-                if (isConnected) {
-                    broadcastLockState(currentLockState)
+                // CRITICAL: Delay broadcast to ensure Flutter UI is fully ready
+                // When app reopens, Flutter needs time to initialize before receiving broadcasts
+                serviceScope.launch {
+                    Timber.d("📡 Sync state requested - waiting 500ms before broadcasting")
+                    delay(500) // Wait for Flutter UI to be ready
+
+                    Timber.d("📡 Broadcasting current state: isConnected=$isConnected, state=$currentLockState")
+                    broadcastConnectionState(isConnected)
+                    if (isConnected) {
+                        broadcastLockState(currentLockState)
+                    }
                 }
             }
             ACTION_OPEN_LOCK -> {

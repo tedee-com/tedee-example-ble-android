@@ -1,5 +1,6 @@
 package tedee.mobile.demo
 
+import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -34,6 +35,20 @@ class RegisterLockExampleActivity : AppCompatActivity(), IAddLockConnectionListe
     super.onCreate(savedInstanceState)
     binding = ActivityRegisterLockExampleBinding.inflate(layoutInflater)
     setContentView(binding.root)
+
+    // Check if Bluetooth is enabled
+    val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as? BluetoothManager
+    val bluetoothAdapter = bluetoothManager?.adapter
+    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
+      Toast.makeText(
+        this,
+        "Bluetooth is disabled. Please enable Bluetooth to use this app.",
+        Toast.LENGTH_LONG
+      ).show()
+      Timber.w("Bluetooth is disabled or not available")
+      return
+    }
+
     requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
     lifecycleScope.launch {
       try {

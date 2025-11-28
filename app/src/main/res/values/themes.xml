@@ -19,6 +19,16 @@
     <item name="windowNoTitle">true</item>
   </style>
 
+  <style name="Theme.TedeeDemo.SplashScreen" parent="Theme.SplashScreen">
+    <!-- Splash screen background color (Android 12+) -->
+    <item name="windowSplashScreenBackground">@color/splash_grey</item>
+    <!-- Fallback for older Android versions -->
+    <item name="android:windowBackground">@color/splash_grey</item>
+    <item name="android:statusBarColor">@color/splash_grey</item>
+    <!-- Theme to use after splash screen -->
+    <item name="postSplashScreenTheme">@style/Theme.TedeeDemo.NoActionBar</item>
+  </style>
+
   <style name="Theme.TedeeDemo.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
   <style name="Theme.TedeeDemo.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />

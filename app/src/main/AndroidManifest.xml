@@ -11,6 +11,7 @@
         android:name="android.permission.ACCESS_COARSE_LOCATION"
         tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ExampleApplication"
@@ -22,15 +23,11 @@
         android:theme="@style/Theme.TedeeDemo">
         <activity
             android:name=".MainActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.TedeeDemo.NoActionBar">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:theme="@style/Theme.TedeeDemo.SplashScreen">
+            <!-- LAUNCHER disabled - use flutter_app instead -->
         </activity>
 
         <activity

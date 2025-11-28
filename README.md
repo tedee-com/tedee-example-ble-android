@@ -2,11 +2,25 @@
 
 ![lock](https://user-images.githubusercontent.com/81370389/209109383-c9163001-cc5b-418b-be65-87906a3cc11c.jpg)
 
+---
+
+## 🆕 Flutter App Available
+
+**This repository now includes a fully-featured Flutter application** with advanced UI and background service support:
+
+📱 **Location:** [`flutter_app/`](./flutter_app/)
+✨ **Features:** Swipe gestures, background service, auto-actions, battery monitoring, activity logs
+📖 **Documentation:** [Flutter App README](./flutter_app/README.md)
+
+**Recommended for new development** - The Flutter app provides a modern, cross-platform foundation with enhanced features beyond the native Android example.
+
+---
+
 ## Documentation
 
 [Mobile SDK Documentation](https://tedee-com.github.io/tedee-mobile-sdk-android/)
 
-## About
+## About (Native Android Example)
 
 This example project was created by the [Tedee](https://tedee.com) team to show you how to operate the Tedee Lock using Bluetooth Low Energy communication protocol.
 This project is developed using the Kotlin language and is designed to run on Android devices. It utilizes our Tedee Lock SDK, which can be accessed via the following link: [LINK TO SDK](https://github.com/tedee-com/tedee-mobile-sdk-android).

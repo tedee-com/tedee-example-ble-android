@@ -149,6 +149,22 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
 
       if (connected) {
         _addLog('✅ Connected successfully');
+
+        // Get initial lock state after connection
+        try {
+          await Future.delayed(const Duration(milliseconds: 500)); // Small delay for connection to stabilize
+          final state = await _lockService.getLockState();
+          _addLog('🔍 Initial state: $state');
+        } catch (e) {
+          _addLog('⚠️ Could not get initial state: $e');
+        }
+
+        // Get initial battery level
+        try {
+          await _updateBatteryLevel();
+        } catch (e) {
+          _addLog('⚠️ Could not get battery: $e');
+        }
       } else {
         _addLog('❌ Connection failed');
       }

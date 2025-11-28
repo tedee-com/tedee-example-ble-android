@@ -498,6 +498,13 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     // ILockConnectionListener callbacks
     override fun onLockConnectionChanged(isConnecting: Boolean, isConnected: Boolean) {
         Timber.d("Flutter: onLockConnectionChanged - isConnecting: $isConnecting, isConnected: $isConnected")
+
+        // Send connection state to Flutter (for UI updates)
+        runOnUiThread {
+            methodChannel?.invokeMethod("onConnectionStateChanged", isConnected)
+        }
+
+        // Also send notification message
         val status = when {
             isConnecting -> "Connecting..."
             isConnected -> "✅ Secure session established"
@@ -529,6 +536,13 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
         Timber.d("Flutter: onLockStatusChanged - currentState: $currentState, status: $status")
         val readableState = currentState.getReadableLockState()
         val readableStatus = status.getReadableStatus()
+
+        // Send lock state to Flutter (for UI updates)
+        runOnUiThread {
+            methodChannel?.invokeMethod("onLockStateChanged", readableState)
+        }
+
+        // Also send notification message
         sendNotificationToFlutter("State: $readableState, Status: $readableStatus")
     }
 

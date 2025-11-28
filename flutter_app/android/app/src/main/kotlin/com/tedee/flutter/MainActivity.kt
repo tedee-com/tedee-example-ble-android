@@ -8,6 +8,8 @@ import android.app.ActivityManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.Manifest
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
@@ -432,22 +434,27 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     override fun onResume() {
         super.onResume()
 
-        // Register receiver when app comes to foreground
-        if (!isReceiverRegistered && methodChannel != null) {
-            try {
-                val filter = IntentFilter().apply {
-                    addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
-                    addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
-                    addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
+        // CRITICAL: Delay receiver registration to avoid blocking splash screen
+        // If background service is actively sending broadcasts, registering immediately
+        // can cause the app to process events before Flutter UI is ready
+        Handler(Looper.getMainLooper()).postDelayed({
+            // Register receiver when app comes to foreground
+            if (!isReceiverRegistered && methodChannel != null) {
+                try {
+                    val filter = IntentFilter().apply {
+                        addAction(TedeeLockForegroundService.BROADCAST_CONNECTION_STATE)
+                        addAction(TedeeLockForegroundService.BROADCAST_LOCK_STATE)
+                        addAction(TedeeLockForegroundService.BROADCAST_COMMAND_RESULT)
+                    }
+                    registerReceiver(serviceStateReceiver, filter)
+                    isReceiverRegistered = true
+                    Timber.d("📡 Registered broadcast receiver in onResume()")
+                    // Note: State sync will be requested by Flutter when ready, not here
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to register receiver")
                 }
-                registerReceiver(serviceStateReceiver, filter)
-                isReceiverRegistered = true
-                Timber.d("📡 Registered broadcast receiver in onResume()")
-                // Note: State sync will be requested by Flutter when ready, not here
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to register receiver")
             }
-        }
+        }, 1000) // Wait 1 second before registering receiver
     }
 
     override fun onPause() {

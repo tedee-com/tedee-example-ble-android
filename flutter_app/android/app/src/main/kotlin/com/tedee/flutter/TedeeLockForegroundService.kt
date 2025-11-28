@@ -459,10 +459,6 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
                 // Broadcast disconnection to Flutter
                 broadcastConnectionState(false)
-
-                // Stop polling when disconnected
-                statePollingJob?.cancel()
-                statePollingJob = null
             }
         }
     }

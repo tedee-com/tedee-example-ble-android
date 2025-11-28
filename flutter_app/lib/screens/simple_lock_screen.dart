@@ -13,7 +13,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
   final TedeeLockService _lockService = TedeeLockService();
 
   bool _isConnected = false;
-  bool _autoOpenEnabled = false; // Auto open: automatically open lock when closed
   String _lockState = "Unknown";
   int? _batteryLevel; // Battery level 0-100 (null if not fetched yet)
   bool _isCharging = false; // Charging status
@@ -129,49 +128,32 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     };
     _lockService.setNotificationListener(_notificationListener);
 
-    // Auto-start service (always on)
-    // IMPORTANT: Don't await these operations to avoid blocking the UI
-    // They will run in background and update the state when ready
+    // SIMPLIFIED: Auto-connect directly (no background service)
+    // Connect when app opens, disconnect when app closes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeAppStateInBackground();
+      _connectDirectly();
     });
   }
 
-  /// Initialize app state in background without blocking UI
-  Future<void> _initializeAppStateInBackground() async {
+  /// Connect directly to lock (foreground only, no background service)
+  Future<void> _connectDirectly() async {
     try {
-      // Check if service is already running (immediate, non-blocking)
-      _checkAndStartService().catchError((e) {
-        _addLog('❌ Failed to check/start service: $e');
-      });
+      _addLog('🔗 Connecting to lock...');
 
-      // Start periodic battery updates every 2 minutes when connected
-      _startBatteryUpdateTimer();
-    } catch (e) {
-      _addLog('❌ Initialization error: $e');
-    }
-  }
+      final connected = await _lockService.connect(
+        serialNumber: _serialNumberController.text,
+        deviceId: _deviceIdController.text,
+        name: _nameController.text,
+        keepConnection: true,
+      );
 
-  /// Check if service is running and start if needed
-  Future<void> _checkAndStartService() async {
-    try {
-      _addLog('🔄 Checking service status...');
-      final isRunning = await _lockService.isBackgroundServiceRunning();
-
-      if (isRunning) {
-        _addLog('✅ Service already running');
-        // No delay needed! Service is already active.
+      if (connected) {
+        _addLog('✅ Connected successfully');
       } else {
-        _addLog('⏳ Service not running - waiting 2s before starting...');
-        // CRITICAL: Wait 2 seconds before starting service (Android 12+ requirement)
-        // This allows the app to fully reach foreground state
-        await Future.delayed(const Duration(seconds: 2));
-
-        _addLog('🤖 Starting service now...');
-        await _startService();
+        _addLog('❌ Connection failed');
       }
     } catch (e) {
-      _addLog('❌ Error checking/starting service: $e');
+      _addLog('❌ Connection error: $e');
     }
   }
 
@@ -182,21 +164,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         await _updateBatteryLevel();
       }
     });
-  }
-
-  Future<void> _startService() async {
-    try {
-      await _lockService.startBackgroundService(
-        serialNumber: _serialNumberController.text,
-        deviceId: _deviceIdController.text,
-        name: _nameController.text,
-        enableAutoActions: _autoOpenEnabled,
-      );
-      final actionsStatus = _autoOpenEnabled ? 'Auto Open ON' : 'Auto Open OFF';
-      _addLog('✅ Service started - $actionsStatus');
-    } catch (e) {
-      _addLog('❌ Failed to start service: $e');
-    }
   }
 
   Future<void> _updateBatteryLevel() async {
@@ -220,19 +187,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       }
     } catch (e) {
       _addLog('❌ Battery error: $e');
-    }
-  }
-
-  Future<void> _toggleAutoOpen(bool value) async {
-    setState(() {
-      _autoOpenEnabled = value;
-    });
-    // Restart service with new setting
-    try {
-      await _lockService.stopBackgroundService();
-      await _startService();
-    } catch (e) {
-      _addLog('❌ Failed to update Auto Open: $e');
     }
   }
 
@@ -472,6 +426,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
     // Cancel timers
     _stateUpdateDebounceTimer?.cancel();
     _batteryUpdateTimer?.cancel();
+
+    // Disconnect from lock
+    _lockService.disconnect();
 
     // Dispose controllers
     _serialNumberController.dispose();
@@ -732,43 +689,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
                   ),
                 ),
               ),
-
-            const SizedBox(height: 24),
-
-            // Auto Open Toggle
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: _getBackgroundColor().withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: SwitchListTile(
-                title: const Text(
-                  'Auto Open',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                subtitle: Text(
-                  _autoOpenEnabled
-                      ? 'Automatically open lock when closed'
-                      : 'Manual control only',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                ),
-                value: _autoOpenEnabled,
-                onChanged: _toggleAutoOpen,
-                activeColor: Colors.orange,
-              ),
-            ),
 
             const SizedBox(height: 24),
 

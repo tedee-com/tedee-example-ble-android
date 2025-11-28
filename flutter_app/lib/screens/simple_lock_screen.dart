@@ -244,15 +244,15 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       final isRunning = await _lockService.isBackgroundServiceRunning();
 
       if (isRunning) {
-        _addLog('🔄 Service running - syncing state...');
-        await _lockService.requestStateSync();
-        // Update battery level
-        await _updateBatteryLevel();
+        _addLog('✅ Service running - will receive broadcasts when service sends them');
+        // DON'T request state sync here! Let the service send broadcasts naturally.
+        // The broadcast receiver is already registered and will receive updates.
+        // This prevents the splash screen from blocking while waiting for service response.
       } else {
-        _addLog('⚠️ Service not running');
+        _addLog('ℹ️ Service not running - will start automatically');
       }
     } catch (e) {
-      _addLog('❌ Error: $e');
+      _addLog('❌ Error checking service status: $e');
     }
   }
 

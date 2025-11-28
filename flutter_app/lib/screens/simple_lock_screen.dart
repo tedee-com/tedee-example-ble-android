@@ -140,40 +140,38 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
   /// Initialize app state in background without blocking UI
   Future<void> _initializeAppStateInBackground() async {
     try {
-      // Restore previous state (non-blocking)
-      _restoreState().catchError((e) {
-        _addLog('❌ Failed to restore state: $e');
+      // Check if service is already running (immediate, non-blocking)
+      _checkAndStartService().catchError((e) {
+        _addLog('❌ Failed to check/start service: $e');
       });
-
-      // CRITICAL: Wait 2 seconds before checking/starting service
-      // This ensures the app is fully in foreground for Android 12+
-      // Android blocks foreground service start immediately in onCreate/onStart,
-      // but allows it after the app is visibly running for a short time
-      Future.delayed(const Duration(seconds: 2), () async {
-        try {
-          final isRunning = await _lockService.isBackgroundServiceRunning();
-          if (isRunning) {
-            _addLog('✅ Service already running');
-          } else {
-            _addLog('🤖 Auto-starting service...');
-            await _startService();
-          }
-        } catch (e) {
-          _addLog('❌ Failed to start service: $e');
-        }
-      });
-
-      // Get initial battery level only if connected (non-blocking)
-      if (_isConnected) {
-        _updateBatteryLevel().catchError((e) {
-          _addLog('❌ Failed to update battery: $e');
-        });
-      }
 
       // Start periodic battery updates every 2 minutes when connected
       _startBatteryUpdateTimer();
     } catch (e) {
       _addLog('❌ Initialization error: $e');
+    }
+  }
+
+  /// Check if service is running and start if needed
+  Future<void> _checkAndStartService() async {
+    try {
+      _addLog('🔄 Checking service status...');
+      final isRunning = await _lockService.isBackgroundServiceRunning();
+
+      if (isRunning) {
+        _addLog('✅ Service already running');
+        // No delay needed! Service is already active.
+      } else {
+        _addLog('⏳ Service not running - waiting 2s before starting...');
+        // CRITICAL: Wait 2 seconds before starting service (Android 12+ requirement)
+        // This allows the app to fully reach foreground state
+        await Future.delayed(const Duration(seconds: 2));
+
+        _addLog('🤖 Starting service now...');
+        await _startService();
+      }
+    } catch (e) {
+      _addLog('❌ Error checking/starting service: $e');
     }
   }
 
@@ -235,24 +233,6 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       await _startService();
     } catch (e) {
       _addLog('❌ Failed to update Auto Open: $e');
-    }
-  }
-
-  Future<void> _restoreState() async {
-    try {
-      _addLog('🔄 Checking service status...');
-      final isRunning = await _lockService.isBackgroundServiceRunning();
-
-      if (isRunning) {
-        _addLog('✅ Service running - will receive broadcasts when service sends them');
-        // DON'T request state sync here! Let the service send broadcasts naturally.
-        // The broadcast receiver is already registered and will receive updates.
-        // This prevents the splash screen from blocking while waiting for service response.
-      } else {
-        _addLog('ℹ️ Service not running - will start automatically');
-      }
-    } catch (e) {
-      _addLog('❌ Error checking service status: $e');
     }
   }
 

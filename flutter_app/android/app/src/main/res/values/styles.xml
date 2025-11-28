@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Pre-Android 12 - DISABLED splash screen for instant launch -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Transparent background = no visible splash screen -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- Make window transparent during launch -->
+        <item name="android:windowIsTranslucent">true</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>

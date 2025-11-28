@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+ Splash Screen API -->
+    <!-- Android 12+ Splash Screen API - DISABLED for instant launch -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Grey background color for splash screen -->
-        <item name="android:windowSplashScreenBackground">@color/launch_background_color</item>
-        <!-- Optional: Icon for splash screen (if you want to add one later) -->
-        <!-- <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item> -->
-        <item name="android:windowSplashScreenAnimationDuration">300</item>
+        <!-- Transparent background = no visible splash screen -->
+        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
+        <!-- No icon shown -->
+        <!-- Duration = 0 for instant transition -->
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+        <!-- Make window transparent during launch -->
+        <item name="android:windowIsTranslucent">true</item>
     </style>
 
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">

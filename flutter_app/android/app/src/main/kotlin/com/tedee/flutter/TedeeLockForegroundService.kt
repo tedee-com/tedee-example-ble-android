@@ -72,7 +72,6 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var reconnectJob: Job? = null
-    private var statePollingJob: Job? = null
 
     private var serialNumber: String? = null
     private var deviceId: String? = null
@@ -243,55 +242,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     }
 
     /**
-     * Start periodic polling of lock state
-     * Cylinders don't send automatic state notifications, so we poll manually
-     */
-    private fun startStatePolling() {
-        statePollingJob?.cancel()
-        statePollingJob = serviceScope.launch {
-            // FIRST CHECK: Read state IMMEDIATELY after secure connection
-            try {
-                Timber.i("🔍 Initial state check after secure connection...")
-                val response = lockConnectionManager.getLockState()
-
-                if (response != null && response.size >= 2) {
-                    val state = response[1]
-                    val stateHex = "0x%02X".format(state.toInt() and 0xFF)
-                    Timber.i("📊 Initial state: ${state.getReadableLockState()} ($stateHex)")
-
-                    // Trigger auto-actions immediately if needed
-                    handleLockStateUpdate(state)
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Initial state check failed")
-            }
-
-            // CONTINUOUS POLLING: Then poll every 5 seconds
-            while (isConnected) {
-                try {
-                    delay(5000) // Wait 5 seconds between checks
-
-                    if (isConnected) {
-                        Timber.d("🔍 Polling lock state...")
-                        val response = lockConnectionManager.getLockState()
-
-                        if (response != null && response.size >= 2) {
-                            val state = response[1]
-                            val stateHex = "0x%02X".format(state.toInt() and 0xFF)
-                            Timber.i("📊 Polled state: ${state.getReadableLockState()} ($stateHex)")
-
-                            handleLockStateUpdate(state)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "State polling failed")
-                }
-            }
-        }
-    }
-
-    /**
-     * Handle lock state update (called from both callback and polling)
+     * Handle lock state update from SDK callback
+     * The Tedee SDK automatically sends state change notifications via onLockStatusChanged()
+     * No need for manual polling!
      */
     private fun handleLockStateUpdate(state: Byte) {
         currentLockStateByte = state
@@ -493,10 +446,6 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
 
                 // Broadcast connection state to Flutter
                 broadcastConnectionState(true)
-
-                // Start polling lock state (cylinders don't send automatic notifications)
-                Timber.i("🔄 Starting state polling for cylinder...")
-                startStatePolling()
             }
             isConnecting -> {
                 updateNotification("Connecting to $lockName...", false)
@@ -665,7 +614,6 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     override fun onDestroy() {
         Timber.d("TedeeLockForegroundService: onDestroy()")
         reconnectJob?.cancel()
-        statePollingJob?.cancel()
         lockConnectionManager.disconnect()
         lockConnectionManager.clear()
         super.onDestroy()

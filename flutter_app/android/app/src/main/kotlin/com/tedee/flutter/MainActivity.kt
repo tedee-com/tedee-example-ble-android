@@ -556,7 +556,9 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     private fun isBackgroundServiceRunning(): Boolean {
         val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         @Suppress("DEPRECATION") // getRunningServices still works for own app's services
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+        // CRITICAL FIX: Use reasonable limit instead of Int.MAX_VALUE to avoid blocking main thread
+        // 100 services is more than enough to find our own service
+        for (service in manager.getRunningServices(100)) {
             if (TedeeLockForegroundService::class.java.name == service.service.className) {
                 return true
             }

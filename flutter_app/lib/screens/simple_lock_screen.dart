@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tedee_lock_service.dart';
 
 class SimpleLockScreen extends StatefulWidget {
@@ -119,6 +120,8 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
         _lockState = lockState;
         _updateCirclePositionBasedOnState();
       });
+      // Save state persistently
+      _saveLastState(lockState);
     };
     _lockService.setLockStateListener(_stateListener);
 
@@ -127,6 +130,9 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       _addLog('📱 $message');
     };
     _lockService.setNotificationListener(_notificationListener);
+
+    // Load last known state before connecting
+    _loadLastState();
 
     // SIMPLIFIED: Auto-connect directly (no background service)
     // Connect when app opens, disconnect when app closes
@@ -150,13 +156,23 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       if (connected) {
         _addLog('✅ Connected successfully');
 
-        // Get initial lock state after connection
-        try {
-          await Future.delayed(const Duration(milliseconds: 500)); // Small delay for connection to stabilize
-          final state = await _lockService.getLockState();
-          _addLog('🔍 Initial state: $state');
-        } catch (e) {
-          _addLog('⚠️ Could not get initial state: $e');
+        // SMART STATE RETRIEVAL:
+        // Wait 2 seconds for automatic state notification (onLockStatusChanged callback)
+        // If no state arrives, request it manually
+        final lastKnownState = _lockState;
+        await Future.delayed(const Duration(seconds: 2));
+
+        // Check if state was updated via callback
+        if (_lockState == lastKnownState || _lockState == "Unknown") {
+          _addLog('🔍 No automatic state received, requesting manually...');
+          try {
+            final state = await _lockService.getLockState();
+            _addLog('✅ Manual state request: $state');
+          } catch (e) {
+            _addLog('⚠️ Manual state request failed: $e');
+          }
+        } else {
+          _addLog('✅ State received automatically via callback');
         }
 
         // Get initial battery level
@@ -203,6 +219,36 @@ class _SimpleLockScreenState extends State<SimpleLockScreen> with TickerProvider
       }
     } catch (e) {
       _addLog('❌ Battery error: $e');
+    }
+  }
+
+  /// Save last known lock state persistently
+  Future<void> _saveLastState(String state) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_lock_state', state);
+      _addLog('💾 Saved state: $state');
+    } catch (e) {
+      _addLog('⚠️ Failed to save state: $e');
+    }
+  }
+
+  /// Load last known lock state from storage
+  Future<void> _loadLastState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedState = prefs.getString('last_lock_state');
+      if (savedState != null && savedState.isNotEmpty) {
+        setState(() {
+          _lockState = savedState;
+          _updateCirclePositionBasedOnState();
+        });
+        _addLog('📂 Loaded saved state: $savedState');
+      } else {
+        _addLog('📂 No saved state found');
+      }
+    } catch (e) {
+      _addLog('⚠️ Failed to load state: $e');
     }
   }
 

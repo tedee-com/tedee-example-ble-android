@@ -214,6 +214,9 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                             }
                         }
 
+                        // CRITICAL: Wait before next connection attempt to avoid infinite loop
+                        delay(retryDelay)
+
                         // Reset retry delay on successful connection attempt
                         retryDelay = 5000L
                     } catch (e: ScanThrottleException) {

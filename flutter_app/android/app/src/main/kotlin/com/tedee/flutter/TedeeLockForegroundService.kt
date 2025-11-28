@@ -191,6 +191,11 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
     private fun startAutoConnect() {
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
+            // CRITICAL FIX: Add initial delay to allow app UI to load first
+            // This prevents the service from blocking the splash screen
+            Timber.d("Service started - waiting 3 seconds before first connection attempt")
+            delay(3000L) // Wait 3 seconds for app UI to fully load
+
             var retryDelay = 5000L // Start with 5 seconds
             val maxRetryDelay = 60000L // Max 60 seconds
 
@@ -199,7 +204,15 @@ class TedeeLockForegroundService : Service(), ILockConnectionListener {
                     try {
                         Timber.d("Auto-connecting to lock...")
                         updateNotification("Connecting to $lockName...", false)
-                        connectToLock()
+
+                        // CRITICAL FIX: Launch connection in separate coroutine to avoid blocking
+                        serviceScope.launch {
+                            try {
+                                connectToLock()
+                            } catch (e: Exception) {
+                                Timber.e(e, "Connection attempt failed")
+                            }
+                        }
 
                         // Reset retry delay on successful connection attempt
                         retryDelay = 5000L

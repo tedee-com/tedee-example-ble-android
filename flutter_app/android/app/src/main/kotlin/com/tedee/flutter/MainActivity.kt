@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.Manifest
 import androidx.annotation.NonNull
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -81,10 +80,8 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install splash screen BEFORE super.onCreate() for Android 12+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            installSplashScreen()
-        }
+        // IMPORTANT: Don't install splash screen here - it can block the UI
+        // Flutter will handle the initial loading screen
 
         super.onCreate(savedInstanceState)
 
@@ -97,8 +94,12 @@ class MainActivity : FlutterActivity(), ILockConnectionListener {
             }
         }
 
-        // Request Bluetooth permissions first
-        requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
+        // IMPORTANT: Don't request permissions in onCreate - this blocks the splash screen
+        // Permissions will be requested when Flutter UI is ready (after first frame)
+        // Request Bluetooth permissions after Flutter is ready
+        window.decorView.post {
+            requestPermissions(getBluetoothPermissions().toTypedArray(), 9)
+        }
 
         // Note: Don't initialize lockConnectionManager here to avoid conflicts
         // with background service. It will be initialized lazily when needed.
